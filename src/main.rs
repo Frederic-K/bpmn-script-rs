@@ -1,0 +1,604 @@
+//! bpmn-script-rs — portage Rust de la V0.1 de bpmn-script.
+//!
+//! Même workflow, mêmes dossiers, mêmes fichiers produits :
+//! inventaire -> correspondance humaine -> dry-run -> validation humaine -> SGX modifié.
+
+use std::error::Error;
+use std::fs::{self, File};
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
+
+use calamine::{Data, Reader, Xlsx, open_workbook};
+use indexmap::{IndexMap, map::Entry};
+use rust_xlsxwriter::{DataValidation, Format, FormatAlign, FormatPattern, Workbook};
+use serde::Serialize;
+use serde_json::{Value, json};
+use zip::{ZipArchive, ZipWriter, write::SimpleFileOptions};
+
+type Res<T> = Result<T, Box<dyn Error>>;
+
+const CORRESPONDANCE: &str = "work/correspondance_swimlanes.xlsx";
+const VALIDATION: &str = "work/validation_modifications.xlsx";
+
+#[derive(Serialize)]
+struct Occurrence {
+    fichier_modele: String,
+    flux: String,
+    lane: String,
+}
+
+#[derive(Serialize, Default)]
+struct Synthese {
+    occurrences: u64,
+    flux: Vec<String>,
+    occurrences_par_flux: IndexMap<String, u64>,
+    occurrences_par_modele: IndexMap<String, ParModele>,
+}
+
+#[derive(Serialize)]
+struct ParModele {
+    flux: String,
+    occurrences: u64,
+}
+
+/// Une proposition du dry-run (toutes les valeurs sont connues).
+#[derive(Serialize, Clone, PartialEq)]
+struct Modification {
+    fichier_modele: String,
+    flux: String,
+    nom_actuel: String,
+    nouveau_nom: String,
+    occurrences: u64,
+}
+
+/// Une ligne relue dans l'Excel de validation (les cellules peuvent être vides).
+#[derive(Serialize)]
+struct Ligne {
+    fichier_modele: Option<String>,
+    flux: Option<String>,
+    nom_actuel: Option<String>,
+    nouveau_nom: Option<String>,
+    occurrences: Option<u64>,
+}
+
+impl Ligne {
+    fn proposition(&self) -> Option<Modification> {
+        Some(Modification {
+            fichier_modele: self.fichier_modele.clone()?,
+            flux: self.flux.clone()?,
+            nom_actuel: self.nom_actuel.clone()?,
+            nouveau_nom: self.nouveau_nom.clone()?,
+            occurrences: self.occurrences?,
+        })
+    }
+}
+
+#[derive(Serialize)]
+struct Ignoree {
+    #[serde(flatten)]
+    ligne: Ligne,
+    motif: &'static str,
+}
+
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("[ERREUR] {e}");
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Res<()> {
+    let sgx = trouver_sgx()?;
+    println!("[OK] Fichier SGX sélectionné : {}", nom(&sgx));
+    fs::create_dir_all("output")?;
+
+    // 1. Inventaire
+    let resultats = extraire_lanes(&sgx)?;
+    println!("[OK] Extraction terminée : {} occurrences", resultats.len());
+    ecrire_json("output/resultats.json", &resultats)?;
+    println!("[OK] resultats.json généré");
+
+    let synthese = synthetiser(&resultats);
+    println!("[OK] Synthèse terminée : {} lanes uniques", synthese.len());
+    ecrire_json("output/synthese.json", &synthese)?;
+    println!("[OK] synthese.json généré");
+
+    ecrire_inventaire(&synthese)?;
+    println!("[OK] Excel généré : output/inventaire_swimlanes.xlsx");
+
+    // 2. Dry-run
+    if !Path::new(CORRESPONDANCE).exists() {
+        println!(
+            "[INFO] Aucun fichier de correspondance trouvé : la préparation des modifications est ignorée"
+        );
+        return Ok(());
+    }
+    let correspondances = lire_correspondances()?;
+    println!("[OK] Correspondances chargées : {}", correspondances.len());
+    ecrire_json("output/correspondances.json", &correspondances)?;
+    println!("[OK] correspondances.json généré");
+
+    let analyse = dry_run(&correspondances, &synthese);
+    println!("[OK] Dry-run préparé : {} impacts flux/lane", analyse.len());
+    ecrire_json("output/analyse_modifications.json", &analyse)?;
+    println!("[OK] analyse_modifications.json généré");
+
+    ecrire_analyse(&analyse)?;
+    println!("[OK] Excel d'analyse généré : output/analyse_modifications.xlsx");
+
+    // 3. Validation
+    if !Path::new(VALIDATION).exists() {
+        println!("[INFO] Aucun fichier de validation trouvé : aucune modification autorisée");
+        return Ok(());
+    }
+    let validees = controler_validation(&analyse)?;
+
+    // 4. Génération du SGX modifié
+    generer_sgx(&sgx, &validees)
+}
+
+// ---------------------------------------------------------------- SGX
+
+fn trouver_sgx() -> Res<PathBuf> {
+    let mut fichiers: Vec<PathBuf> = fs::read_dir("input")
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entree| entree.path())
+        .filter(|p| p.extension().is_some_and(|e| e.eq_ignore_ascii_case("sgx")))
+        .collect();
+
+    match fichiers.len() {
+        0 => Err("Aucun fichier SGX trouvé dans input/".into()),
+        1 => Ok(fichiers.remove(0)),
+        _ => Err("Plusieurs fichiers SGX trouvés dans input/ : un seul fichier est attendu".into()),
+    }
+}
+
+fn lire_json(archive: &mut ZipArchive<File>, chemin: &str) -> Res<Value> {
+    let mut contenu = String::new();
+    archive.by_name(chemin)?.read_to_string(&mut contenu)?;
+    Ok(serde_json::from_str(&contenu)?)
+}
+
+fn extraire_lanes(sgx: &Path) -> Res<Vec<Occurrence>> {
+    let mut archive = ZipArchive::new(File::open(sgx)?)?;
+    println!("[OK] Archive SGX ouverte");
+
+    let modeles: Vec<String> = (0..archive.len())
+        .filter_map(|i| archive.name_for_index(i).map(str::to_string))
+        .filter(|n| n.ends_with("model_1_.json"))
+        .collect();
+
+    let mut resultats = Vec::new();
+    for fichier_modele in modeles {
+        let meta = lire_json(
+            &mut archive,
+            &fichier_modele.replace("model_1_.json", "model_meta.json"),
+        )?;
+        let flux = meta["name"].as_str().unwrap_or("").to_string();
+
+        let mut lanes = Vec::new();
+        trouver_lanes(&lire_json(&mut archive, &fichier_modele)?, &mut lanes);
+
+        for lane in lanes {
+            resultats.push(Occurrence {
+                fichier_modele: fichier_modele.clone(),
+                flux: flux.clone(),
+                lane,
+            });
+        }
+    }
+    Ok(resultats)
+}
+
+fn est_lane(shape: &Value) -> bool {
+    shape["stencil"]["id"] == "Lane"
+}
+
+fn trouver_lanes(shape: &Value, lanes: &mut Vec<String>) {
+    if est_lane(shape)
+        && let Some(nom) = shape["properties"]["name"].as_str().map(str::trim)
+        && !nom.is_empty()
+    {
+        lanes.push(nom.to_string());
+    }
+    for enfant in shape["childShapes"].as_array().into_iter().flatten() {
+        trouver_lanes(enfant, lanes);
+    }
+}
+
+fn renommer_lanes(shape: &mut Value, nom_actuel: &str, nouveau_nom: &str) -> u64 {
+    let mut n = 0;
+    if est_lane(shape) && shape["properties"]["name"].as_str().map(str::trim) == Some(nom_actuel) {
+        shape["properties"]["name"] = nouveau_nom.into();
+        n += 1;
+    }
+    for enfant in shape["childShapes"].as_array_mut().into_iter().flatten() {
+        n += renommer_lanes(enfant, nom_actuel, nouveau_nom);
+    }
+    n
+}
+
+fn generer_sgx(sgx: &Path, validees: &[Modification]) -> Res<()> {
+    let mut archive = ZipArchive::new(File::open(sgx)?)?;
+
+    // Test des renommages en mémoire
+    let mut modeles: IndexMap<String, Value> = IndexMap::new();
+    let mut conformes = true;
+
+    for m in validees {
+        let modele = match modeles.entry(m.fichier_modele.clone()) {
+            Entry::Occupied(e) => e.into_mut(),
+            Entry::Vacant(e) => e.insert(lire_json(&mut archive, &m.fichier_modele)?),
+        };
+        let n = renommer_lanes(modele, &m.nom_actuel, &m.nouveau_nom);
+        if n == m.occurrences {
+            println!("[OK] Test en mémoire conforme : {n} modification(s)");
+        } else {
+            conformes = false;
+            println!(
+                "[ATTENTION] Test en mémoire non conforme : {n} trouvée(s), {} attendue(s)",
+                m.occurrences
+            );
+        }
+    }
+
+    if !conformes || validees.is_empty() {
+        return Ok(());
+    }
+
+    // Écriture de la nouvelle archive : entrées inchangées copiées telles quelles
+    let stem = sgx.file_stem().unwrap_or_default().to_string_lossy();
+    let chemin = PathBuf::from("output").join(format!("{stem}_modifie.sgx"));
+    let mut sortie = ZipWriter::new(File::create(&chemin)?);
+
+    for i in 0..archive.len() {
+        let entree = archive.by_index_raw(i)?;
+        match modeles.get(entree.name()) {
+            None => sortie.raw_copy_file(entree)?,
+            Some(modele) => {
+                let options = SimpleFileOptions::default()
+                    .compression_method(entree.compression())
+                    .last_modified_time(entree.last_modified().unwrap_or_default());
+                sortie.start_file(entree.name(), options)?;
+                sortie.write_all(serde_json::to_string(modele)?.as_bytes())?;
+            }
+        }
+    }
+    sortie.finish()?;
+
+    println!("[OK] SGX modifié généré : {}", chemin.display());
+    Ok(())
+}
+
+// ---------------------------------------------------------------- Traitements
+
+fn synthetiser(resultats: &[Occurrence]) -> IndexMap<String, Synthese> {
+    let mut synthese: IndexMap<String, Synthese> = IndexMap::new();
+    for r in resultats {
+        let s = synthese.entry(r.lane.clone()).or_default();
+        s.occurrences += 1;
+        if !s.flux.contains(&r.flux) {
+            s.flux.push(r.flux.clone());
+        }
+        *s.occurrences_par_flux.entry(r.flux.clone()).or_default() += 1;
+        s.occurrences_par_modele
+            .entry(r.fichier_modele.clone())
+            .or_insert(ParModele {
+                flux: r.flux.clone(),
+                occurrences: 0,
+            })
+            .occurrences += 1;
+    }
+    synthese
+}
+
+fn lire_correspondances() -> Res<IndexMap<String, String>> {
+    let mut correspondances = IndexMap::new();
+    for ligne in lire_feuille(CORRESPONDANCE, "Correspondance", 2)? {
+        let (Some(actuel), Some(nouveau)) = (texte(&ligne[0]), texte(&ligne[1])) else {
+            continue;
+        };
+        let nouveau = nouveau.trim();
+        if !nouveau.is_empty() {
+            correspondances.insert(actuel, nouveau.to_string());
+        }
+    }
+    Ok(correspondances)
+}
+
+fn dry_run(
+    correspondances: &IndexMap<String, String>,
+    synthese: &IndexMap<String, Synthese>,
+) -> Vec<Modification> {
+    let mut analyse = Vec::new();
+    for (nom_actuel, nouveau_nom) in correspondances {
+        let Some(infos) = synthese.get(nom_actuel) else {
+            continue;
+        };
+        for (fichier_modele, pm) in &infos.occurrences_par_modele {
+            analyse.push(Modification {
+                fichier_modele: fichier_modele.clone(),
+                flux: pm.flux.clone(),
+                nom_actuel: nom_actuel.clone(),
+                nouveau_nom: nouveau_nom.clone(),
+                occurrences: pm.occurrences,
+            });
+        }
+    }
+    analyse
+}
+
+/// Relit la validation humaine, produit les JSON et le rapport de contrôle,
+/// et retourne les modifications validées conformes au dry-run.
+fn controler_validation(analyse: &[Modification]) -> Res<Vec<Modification>> {
+    let mut validees = Vec::new();
+    let mut ignorees = Vec::new();
+    let mut controle = Vec::new();
+
+    for (i, c) in lire_feuille(VALIDATION, "Analyse", 6)?.iter().enumerate() {
+        let ligne = Ligne {
+            flux: texte(&c[0]),
+            nom_actuel: texte(&c[1]),
+            nouveau_nom: texte(&c[2]),
+            occurrences: entier(&c[3]),
+            fichier_modele: texte(&c[5]),
+        };
+        let validation = texte(&c[4]).map(|v| v.trim().to_uppercase());
+
+        let attendu = analyse.iter().find(|m| {
+            Some(&m.fichier_modele) == ligne.fichier_modele.as_ref()
+                && Some(&m.flux) == ligne.flux.as_ref()
+                && Some(&m.nom_actuel) == ligne.nom_actuel.as_ref()
+                && Some(m.occurrences) == ligne.occurrences
+        });
+
+        let (resultat, motif) = match validation.as_deref() {
+            Some("OUI") => match ligne.proposition().filter(|p| analyse.contains(p)) {
+                Some(p) => {
+                    validees.push(p);
+                    ("VALIDÉE", "Conforme au dry-run")
+                }
+                None => {
+                    println!(
+                        "[ATTENTION] Une ligne validée ne correspond plus au dry-run : modification ignorée"
+                    );
+                    ("IGNORÉE", "Ne correspond plus au dry-run")
+                }
+            },
+            Some("NON") => ("NON VALIDÉE", "Refus humain"),
+            _ => ("EN ATTENTE", "Aucune validation renseignée"),
+        };
+
+        controle.push(vec![
+            json!(i + 2),
+            json!(ligne.flux),
+            json!(ligne.nom_actuel),
+            json!(ligne.nouveau_nom),
+            json!(attendu.map(|m| &m.nouveau_nom)),
+            json!(ligne.occurrences),
+            json!(validation),
+            json!(resultat),
+            json!(motif),
+            json!(ligne.fichier_modele),
+        ]);
+        if resultat == "IGNORÉE" {
+            ignorees.push(Ignoree { ligne, motif });
+        }
+    }
+
+    println!("[OK] Modifications validées : {}", validees.len());
+    ecrire_json("output/modifications_validees.json", &validees)?;
+    println!("[OK] modifications_validees.json généré");
+    ecrire_json("output/modifications_ignorees.json", &ignorees)?;
+    println!("[OK] modifications_ignorees.json généré");
+
+    ecrire_excel(
+        "output/controle_validation.xlsx",
+        "Contrôle",
+        &[
+            ("Ligne validation", 18.0),
+            ("Flux", 70.0),
+            ("Nom actuel", 35.0),
+            ("Nouveau nom saisi", 35.0),
+            ("Nouveau nom attendu", 35.0),
+            ("Occurrences", 15.0),
+            ("Validation", 15.0),
+            ("Résultat", 18.0),
+            ("Motif", 40.0),
+            ("Fichier modèle", 250.0),
+        ],
+        &controle,
+        &[1, 8, 9],
+        None,
+    )?;
+    println!("[OK] Rapport de contrôle généré : output/controle_validation.xlsx");
+
+    Ok(validees)
+}
+
+// ---------------------------------------------------------------- Excel
+
+fn ecrire_inventaire(synthese: &IndexMap<String, Synthese>) -> Res<()> {
+    let mut lanes: Vec<_> = synthese.iter().collect();
+    lanes.sort_by(|a, b| a.0.cmp(b.0));
+
+    let lignes: Vec<Vec<Value>> = lanes
+        .into_iter()
+        .map(|(lane, infos)| {
+            let multiples: Vec<String> = infos
+                .occurrences_par_flux
+                .iter()
+                .filter(|(_, n)| **n > 1)
+                .map(|(flux, n)| format!("{flux} ({n})"))
+                .collect();
+            vec![
+                json!(lane),
+                Value::Null,
+                json!(infos.occurrences),
+                json!(infos.flux.len()),
+                json!(infos.flux.join(", ")),
+                json!(multiples.join(", ")),
+            ]
+        })
+        .collect();
+
+    ecrire_excel(
+        "output/inventaire_swimlanes.xlsx",
+        "Correspondance",
+        &[
+            ("Nom actuel", 35.0),
+            ("Nouveau nom", 35.0),
+            ("Occurrences", 15.0),
+            ("Nombre de flux", 18.0),
+            ("Flux concernés", 90.0),
+            ("Flux avec occurrences multiples", 90.0),
+        ],
+        &lignes,
+        &[4, 5],
+        Some((1, false)),
+    )
+}
+
+fn ecrire_analyse(analyse: &[Modification]) -> Res<()> {
+    let lignes: Vec<Vec<Value>> = analyse
+        .iter()
+        .map(|m| {
+            vec![
+                json!(m.flux),
+                json!(m.nom_actuel),
+                json!(m.nouveau_nom),
+                json!(m.occurrences),
+                Value::Null,
+                json!(m.fichier_modele),
+            ]
+        })
+        .collect();
+
+    ecrire_excel(
+        "output/analyse_modifications.xlsx",
+        "Analyse",
+        &[
+            ("Flux", 70.0),
+            ("Nom actuel", 35.0),
+            ("Nouveau nom", 35.0),
+            ("Occurrences", 15.0),
+            ("Validation", 15.0),
+            ("Fichier modèle", 250.0),
+        ],
+        &lignes,
+        &[0, 5],
+        Some((4, true)),
+    )
+}
+
+/// Écrit une feuille unique : en-tête en gras, volet figé, filtre automatique,
+/// colonnes à retour à la ligne, et éventuellement une colonne de saisie
+/// surlignée (avec liste OUI/NON si demandé).
+fn ecrire_excel(
+    chemin: &str,
+    feuille: &str,
+    colonnes: &[(&str, f64)],
+    lignes: &[Vec<Value>],
+    colonnes_wrap: &[u16],
+    saisie: Option<(u16, bool)>,
+) -> Res<()> {
+    let gras = Format::new().set_bold();
+    let wrap = Format::new().set_text_wrap().set_align(FormatAlign::Top);
+    let jaune = Format::new()
+        .set_pattern(FormatPattern::Solid)
+        .set_background_color(0xFFF2CC);
+
+    let mut classeur = Workbook::new();
+    let ws = classeur.add_worksheet().set_name(feuille)?;
+
+    for (c, (titre, largeur)) in colonnes.iter().enumerate() {
+        ws.write_string_with_format(0, c as u16, *titre, &gras)?;
+        ws.set_column_width(c as u16, *largeur)?;
+    }
+
+    for (r, ligne) in lignes.iter().enumerate() {
+        let r = r as u32 + 1;
+        for (c, valeur) in ligne.iter().enumerate() {
+            let c = c as u16;
+            let format = if saisie.is_some_and(|(s, _)| s == c) {
+                &jaune
+            } else if colonnes_wrap.contains(&c) {
+                &wrap
+            } else {
+                &Format::default()
+            };
+            match valeur {
+                Value::Null => ws.write_blank(r, c, format)?,
+                Value::Number(n) => {
+                    ws.write_number_with_format(r, c, n.as_f64().unwrap_or_default(), format)?
+                }
+                Value::String(s) => ws.write_string_with_format(r, c, s, format)?,
+                autre => ws.write_string_with_format(r, c, autre.to_string(), format)?,
+            };
+        }
+    }
+
+    let derniere = lignes.len() as u32;
+    ws.set_freeze_panes(1, 0)?;
+    ws.autofilter(0, 0, derniere, colonnes.len() as u16 - 1)?;
+
+    if let Some((c, true)) = saisie
+        && derniere > 0
+    {
+        let oui_non = DataValidation::new().allow_list_strings(&["OUI", "NON"])?;
+        ws.add_data_validation(1, c, derniere, c, &oui_non)?;
+    }
+
+    classeur.save(chemin)?;
+    Ok(())
+}
+
+/// Lit les lignes de données (à partir de la ligne 2) d'une feuille.
+fn lire_feuille(chemin: &str, feuille: &str, colonnes: u32) -> Res<Vec<Vec<Data>>> {
+    let mut classeur: Xlsx<_> = open_workbook(chemin)?;
+    let plage = classeur.worksheet_range(feuille)?;
+    let Some((fin, _)) = plage.end() else {
+        return Ok(Vec::new());
+    };
+
+    Ok((1..=fin)
+        .map(|r| {
+            (0..colonnes)
+                .map(|c| plage.get_value((r, c)).cloned().unwrap_or_default())
+                .collect()
+        })
+        .collect())
+}
+
+fn texte(cellule: &Data) -> Option<String> {
+    match cellule {
+        Data::Empty => None,
+        Data::String(s) => Some(s.clone()),
+        autre => Some(autre.to_string()),
+    }
+}
+
+fn entier(cellule: &Data) -> Option<u64> {
+    match cellule {
+        Data::Int(i) => u64::try_from(*i).ok(),
+        Data::Float(f) if *f >= 0.0 && f.fract() == 0.0 => Some(*f as u64),
+        _ => None,
+    }
+}
+
+// ---------------------------------------------------------------- Utilitaires
+
+fn ecrire_json<T: Serialize>(chemin: &str, valeur: &T) -> Res<()> {
+    fs::write(chemin, serde_json::to_string_pretty(valeur)?)?;
+    Ok(())
+}
+
+fn nom(chemin: &Path) -> String {
+    chemin
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned()
+}
