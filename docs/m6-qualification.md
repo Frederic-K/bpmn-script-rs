@@ -36,7 +36,15 @@ Résultat de l'exécution : voir la section 4.
    - **Reprise :** fermer l'application, la rouvrir, et reprendre le traitement avec « Ouvrir un dossier de traitement ».
    - **Dossier :** « Afficher le SGX dans le dossier » ouvre l'Explorateur sur le fichier.
    - **Double ouverture :** une seconde instance ouverte sur le même traitement est refusée.
-6. **Clé USB (facultatif) :** copier `bpmn-script-app.exe` sur une clé et le lancer sur un autre poste disposant de WebView2. La portabilité n'est pas garantie tant que cet essai n'est pas consigné.
+6. **Parcours des classeurs avec Excel réel** (essais recommandés par la revue du parcours) :
+   - **Validation locale :** « Ouvrir le classeur de décision », saisir OUI ou NON, enregistrer, fermer, « Lire le classeur de décision ». Le message « Décisions lues le … depuis le classeur de décision du traitement » apparaît.
+   - **Validation externe :** « Enregistrer une copie à transmettre » vers un nouveau nom, la remplir comme un valideur, puis « Importer le retour du valideur ». Avec les mêmes réponses, le résultat doit être identique à la validation locale. Le message indique le nom du fichier importé.
+   - **Copie sans écrasement :** « Enregistrer une copie » vers un fichier existant, en confirmant « Remplacer » dans le dialogue de Windows. La copie doit être refusée et le fichier existant intact.
+   - **Retour remplacé :** importer un premier retour partiel, puis un second. Seul le second est utilisé ; les propositions absentes apparaissent en « Sans décision ».
+   - **Import refusé :** importer un classeur au mauvais format (le classeur de correspondance, par exemple). Le message « Classeur non adopté. Les décisions lues le … restent utilisées » apparaît.
+   - **Correspondances modifiées :** modifier le classeur de correspondance après l'analyse. L'analyse, les décisions et le bilan affichent « à actualiser », et la génération est suspendue.
+   - **Contradiction :** dupliquer une ligne du classeur de décision, avec OUI sur l'une et NON sur l'autre. Le contrôle est bloquant, les deux lignes sont citées, et aucun SGX n'est possible.
+7. **Clé USB (facultatif) :** copier `bpmn-script-app.exe` sur une clé et le lancer sur un autre poste disposant de WebView2. La portabilité n'est pas garantie tant que cet essai n'est pas consigné.
 
 ## 3. Essai sur une copie de SAPHIR puis A17 — Signavio (opérateur)
 
@@ -93,6 +101,7 @@ Critère A16 : compilation, installateur et lancement **qualifiés sur une machi
 |---|---|---|---|---|
 | A16 — installation et lancement | | | | |
 | A16 — parcours complet, Excel, reprise | | | | |
+| A16 — parcours des classeurs (étape 6) | | | | |
 | Clé USB (facultatif) | | | | |
 | SAPHIR — comparaison Python / Rust | | | | |
 | A17 — import Signavio de test | | | | |

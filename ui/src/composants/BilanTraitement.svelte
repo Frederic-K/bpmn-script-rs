@@ -27,7 +27,8 @@
       <dd>{bilan.correspondances_retenues}{#if etat.correspondances_a_relire}<span class="block text-xs text-alerte">{texte.aActualiser}</span>{/if}</dd>
     {/if}
     {#if etat.analyse_preparee}
-      <dt>{texte.propositions}</dt><dd>{etat.propositions.length}</dd>
+      <dt>{texte.propositions}</dt>
+      <dd data-bilan="propositions">{etat.propositions.length}{#if etat.correspondances_a_relire}<span class="block text-xs text-alerte">{texte.aActualiser}</span>{/if}</dd>
     {/if}
     {#if etat.decisions_adoptees && bilan}
       <dt>{texte.admises}</dt>

@@ -1,5 +1,6 @@
 <script>
   import * as moteur from "../moteur.js";
+  import { dateHeure, nomFichier } from "../format.js";
   import { textes } from "../textes.js";
   import Bouton from "./Bouton.svelte";
   import Fichier from "./Fichier.svelte";
@@ -9,10 +10,14 @@
   const texte = textes.correspondances;
 
   const bilan = $derived(etat.dernier_bilan);
+  const lues = $derived(etat.correspondances_lues);
   const aLire = $derived(!etat.correspondances_adoptees || etat.correspondances_a_relire);
 
-  function lire(fichier = null) {
-    return executer(textes.actions.lectureCorrespondances, () => moteur.lireCorrespondances(etat.revision, fichier));
+  let lectureRefusee = $state(false);
+
+  async function lire(fichier = null) {
+    const reponse = await executer(textes.actions.lectureCorrespondances, () => moteur.lireCorrespondances(etat.revision, fichier));
+    lectureRefusee = !reponse;
   }
 
   async function importer() {
@@ -41,8 +46,19 @@
   <Message type="info" etiquette={texte.etiquetteInfo} titre={texte.fermerAvantLecture} />
 {/if}
 
+{#if lectureRefusee && lues}
+  <Message type="alerte" etiquette={texte.etiquetteNonAdopte} titre={texte.nonAdopte(dateHeure(lues.horodatage))} />
+{/if}
+
 {#if etat.correspondances_adoptees && bilan}
   <Message type="ok" etiquette={texte.etiquetteLu} titre={texte.lus(bilan.correspondances_retenues)} />
+  {#if lues}
+    <Message
+      type="info"
+      etiquette={texte.etiquetteUtilise}
+      titre={texte.lecture(dateHeure(lues.horodatage), nomFichier(lues.fichier), lues.classeur_du_traitement)}
+    />
+  {/if}
   {#if bilan.noms_inconnus.length > 0}
     <Message
       type="alerte"
@@ -53,8 +69,8 @@
   {/if}
   {#if bilan.noms_en_doublon.length > 0}
     <Message
-      type="info"
-      etiquette={texte.etiquetteInformation}
+      type="alerte"
+      etiquette={texte.etiquetteAVerifier}
       titre={texte.nomsEnDoublon}
       details={bilan.noms_en_doublon.map((nom) => `« ${nom} »`)}
     />
@@ -72,3 +88,4 @@
     <Bouton principal disabled={occupe || aLire} onclick={preparerAnalyse}>{texte.preparerAnalyse}</Bouton>
   {/if}
 </div>
+<p class="max-w-[72ch] text-xs text-encre-2">{texte.importerExplication}</p>

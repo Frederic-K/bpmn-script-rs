@@ -2,7 +2,7 @@
 
 BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des modèles d'un export Signavio (`.sgx`). L'opérateur décide des renommages dans Excel ; l'application inventorie, contrôle et produit un nouveau SGX **sans jamais modifier la source**. Un SGX erroné importé en production aurait des conséquences lourdes : la robustesse passe avant tout.
 
-État courant, décisions et guide de revue : [SESSION.md](SESSION.md). Spécification d'origine (figée, ne pas modifier) : [docs/dossier-claude/](docs/dossier-claude/).
+État courant, décisions et guide de revue : [SESSION.md](SESSION.md). Fichiers d'un traitement et correspondance code / Python : [docs/guide.md](docs/guide.md). Spécification d'origine (figée, ne pas modifier) : [docs/dossier-claude/](docs/dossier-claude/).
 
 ## Style imposé par le propriétaire
 
@@ -21,6 +21,7 @@ BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des
 |---|---|
 | `src/regles.rs` | Règles métier en mémoire : inventaire, synthèse, correspondances, dry-run, contrôle des décisions, recomptage, vérification du résultat. Aucun accès fichier |
 | `src/sgx.rs` | Lecture de l'archive (anomalies P03), écriture, **relecture et vérification** puis publication |
+| `src/fichiers.rs` | Publication sans écrasement : temporaire complet, puis lien physique (refusé si la destination existe) ; copies enregistrées par l'utilisateur |
 | `src/excel.rs` | Lecture brute des cellules (formules comprises), contrôle feuille et en-têtes, écriture des classeurs |
 | `src/workflow.rs` | Étapes communes, `Bilan`, `Statut`, mode historique `input/`, `work/`, `output/` |
 | `src/traitement.rs` | Dossier de traitement : manifeste, empreintes, instantanés, révisions, verrou, tentatives |
@@ -39,7 +40,7 @@ BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des
 
 ```sh
 npm ci                                            # dépendances interface (versions exactes)
-cargo test --workspace --locked                   # 83 tests Rust
+cargo test --workspace --locked                   # 90 tests Rust
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo fmt --all --check
 npm run build                                     # interface : doit rester sans avertissement
@@ -62,9 +63,9 @@ npm run tauri build                               # release + installateur NSIS 
 
 ## Invariants métier (product-spec R01–R12)
 
-- Source SGX jamais modifiée ; sortie toujours distincte ; **jamais d'écrasement** d'un fichier existant.
+- Source SGX jamais modifiée ; sortie toujours distincte ; **jamais d'écrasement** d'un fichier existant, y compris par une copie enregistrée (publication par `fichiers::publier_sans_ecraser`, jamais `exists()` puis `rename`, qui écrase sous Windows).
 - Identité d'un modèle = chemin interne complet (`…model_1_.json`), jamais le nom affiché.
-- Seul un OUI dont les cinq champs (chemin, flux, nom actuel, nouveau nom, occurrences) sont valides et identiques à une proposition est admis. NON, attente et ligne absente n'autorisent rien.
+- Seul un OUI dont les cinq champs (chemin, flux, nom actuel, nouveau nom, occurrences) sont valides et identiques à une proposition est admis. NON, attente et ligne absente n'autorisent rien. **OUI et NON sur la même proposition = contrôle bloquant** (aucune ligne ne l'emporte).
 - Renommages appliqués séquentiellement et recomptés ; **toute divergence = aucun SGX**.
 - Tout JSON ou Excel mal formé est signalé (P02, P03) ; jamais de conversion silencieuse ni de résultat partiel présenté comme complet.
 - Le SGX écrit est relu et comparé à la source avant publication : seules les lanes validées peuvent différer (`regles::verifier_modele`, `sgx::verifier_sgx`). **Ne jamais affaiblir ce contrôle.**
@@ -76,6 +77,7 @@ npm run tauri build                               # release + installateur NSIS 
 - **Indexation mutable de `serde_json`** : `valeur["cle"]` sur un `&mut Value` insère `null` si la clé manque. Utiliser `get_mut` (voir `regles::enfants_modifiables`).
 - **Messages du CLI** : ils font partie de la comparaison de qualification ; ne pas en changer l'ordre sans raison.
 - **Données obsolètes** : un classeur modifié sans être relu (`*_a_relire`) laisse le dernier bilan en place ; l'interface doit le présenter comme « à actualiser », jamais comme l'état actuel.
+- **Un seul classeur de décision** : `edition/validation_modifications.xlsx`. Un retour importé le remplace entièrement (pas de fusion). Le classeur d'analyse a lui aussi une colonne Validation : ne pas le proposer à l'ouverture dans l'interface.
 - **Non calculé ≠ vide** : `etat.propositions` est vide tant que l'analyse n'est pas préparée ; tester `analyse_preparee` avant de conclure à « aucun changement ».
 - **Chemins Windows** : ne pas transmettre la forme canonique `\\?\` à Excel ou à l'Explorateur.
 

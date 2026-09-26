@@ -4,24 +4,38 @@
   let { etat, ecran, naviguer } = $props();
   const texte = textes.etapes;
 
+  // Un classeur modifié sans être relu : il est « à relire », et les étapes qui
+  // en dépendent sont « à actualiser ».
+  const correspondancesModifiees = $derived(etat.correspondances_a_relire);
+  const decisionsModifiees = $derived(etat.decisions_a_relire);
+
   // Une étape n'est accessible que si le moteur a produit ce qu'elle affiche.
   const etapes = $derived([
-    { id: "source", libelle: texte.source, accessible: true, faite: true, aRelire: false },
+    { id: "source", libelle: texte.source, accessible: true, faite: true, alerte: "" },
     {
       id: "correspondances",
       libelle: texte.correspondances,
       accessible: true,
       faite: etat.correspondances_adoptees,
-      aRelire: etat.correspondances_a_relire,
+      alerte: correspondancesModifiees ? texte.aRelire : "",
     },
-    // Analyse non préparée : les propositions ne sont pas calculées, ce n'est pas une analyse vide.
-    { id: "analyse", libelle: texte.analyse, accessible: etat.analyse_preparee, faite: etat.analyse_preparee, aRelire: false },
+    {
+      id: "analyse",
+      libelle: texte.analyse,
+      // Analyse non préparée : les propositions ne sont pas calculées, ce n'est pas une analyse vide.
+      accessible: etat.analyse_preparee,
+      faite: etat.analyse_preparee,
+      alerte: etat.analyse_preparee && correspondancesModifiees ? texte.aActualiser : "",
+    },
     {
       id: "decisions",
       libelle: texte.decisions,
       accessible: etat.analyse_preparee && etat.propositions.length > 0,
-      faite: etat.decisions_adoptees,
-      aRelire: etat.decisions_a_relire,
+      // Terminée seulement si le contrôle autorise la génération (pas sur un contrôle bloquant).
+      faite:
+        etat.decisions_adoptees &&
+        (etat.dernier_bilan?.statut === "ProductionPossible" || etat.dernier_bilan?.statut === "SgxProduit"),
+      alerte: decisionsModifiees ? texte.aRelire : etat.decisions_adoptees && correspondancesModifiees ? texte.aActualiser : "",
     },
     {
       id: "resultat",
@@ -29,19 +43,19 @@
       // Une tentative interrompue seule doit rester consultable (son dossier y est indiqué).
       accessible: etat.tentatives.length > 0 || etat.tentatives_interrompues.length > 0,
       faite: etat.etape === "ResultatProduit",
-      aRelire: false,
+      alerte: etat.etape === "ResultatProduit" && (correspondancesModifiees || decisionsModifiees) ? texte.aActualiser : "",
     },
   ]);
 
   function etatDeLEtape(etape) {
-    if (etape.aRelire) return texte.aRelire;
+    if (etape.alerte) return etape.alerte;
     if (etape.faite) return texte.terminee;
     if (etape.id === ecran) return texte.enCours;
     return "";
   }
 
   function classesDuNumero(etape) {
-    if (etape.faite && !etape.aRelire) return "border-ok bg-ok text-fond";
+    if (etape.faite && !etape.alerte) return "border-ok bg-ok text-fond";
     if (etape.id === ecran) return "border-accent text-accent";
     return "border-trait text-encre-2";
   }
@@ -64,7 +78,7 @@
       onclick={() => naviguer(etape.id)}
     >
       <span class="grid size-6 place-items-center rounded-full border-[1.5px] text-xs font-semibold {classesDuNumero(etape)}" aria-hidden="true">
-        {etape.faite && !etape.aRelire ? "✓" : index + 1}
+        {etape.faite && !etape.alerte ? "✓" : index + 1}
       </span>
       <span class="font-semibold">{etape.libelle}</span>
       <span class="col-start-2 text-xs text-encre-2 max-[980px]:hidden">{etatDeLEtape(etape)}</span>

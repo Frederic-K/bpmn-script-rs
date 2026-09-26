@@ -4,7 +4,7 @@ Portage Rust de [bpmn-script](https://github.com/Frederic-K/bpmn-script), versio
 
 Objectif : comparer une réécriture Rust simple (KISS, YAGNI) avec le script Python d'origine. Le workflow, les dossiers et les fichiers produits sont identiques.
 
-Consignes pour les agents : [AGENTS.md](AGENTS.md). État du projet et guide de revue : [SESSION.md](SESSION.md).
+Consignes pour les agents : [AGENTS.md](AGENTS.md). État du projet et guide de revue : [SESSION.md](SESSION.md). Fichiers d'un traitement et lecture du code : [docs/guide.md](docs/guide.md).
 
 ## Contenu
 
@@ -16,6 +16,7 @@ Consignes pour les agents : [AGENTS.md](AGENTS.md). État du projet et guide de 
 | `src/workflow.rs` | Étapes communes, bilan, mode historique `input/`, `work/`, `output/` |
 | `src/regles.rs` | Règles métier en mémoire (inventaire, dry-run, contrôle, recomptage, vérification) |
 | `src/sgx.rs` | Lecture, écriture vérifiée et publication de l'archive SGX |
+| `src/fichiers.rs` | Publication d'un fichier sans jamais en écraser un (SGX produit, copies enregistrées) |
 | `src/excel.rs` | Lecture stricte des Excel de saisie, écriture des Excel produits |
 | `src/main.rs` | CLI historique |
 | `src-tauri/` | Application Windows : commandes Tauri appelant le moteur |

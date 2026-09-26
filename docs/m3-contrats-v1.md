@@ -72,6 +72,20 @@ Commun aux deux classeurs :
 
 Une transformation refusée par la bibliothèque est listée dans `Bilan.transformations`. La qualification Signavio (A17) reste nécessaire.
 
+## Évolution après la revue du parcours — décisions contradictoires
+
+Ajoutée après M6, à la suite de la revue Codex du commit `abe5311`.
+
+**Avant :** une même proposition présente deux fois dans le classeur de décision, avec OUI sur une ligne et NON sur l'autre, donnait une admission et un refus. Le OUI était appliqué. Le Python d'origine se comporte de la même façon : c'est une limite héritée.
+
+**Maintenant :** une proposition qui reçoit OUI et NON, dans n'importe quel ordre, est une **contradiction**. Aucune des deux lignes ne l'emporte. Le contrôle est bloquant (`Statut::ControleBloquant`, `Bilan.contradictions`), et aucun SGX n'est produit. Le CLI écrit une ligne `[ERREUR] Ligne n (OUI) et ligne m (NON) : décisions contraires pour « A » → « Z » (fichier modèle)` et sort avec le code 2.
+
+- La contradiction porte sur la proposition exacte, c'est-à-dire ses cinq champs. Un NON sur une autre proposition n'est pas une contradiction.
+- Un OUI répété n'est pas une contradiction. R09 conserve ce doublon, et le recomptage le bloque, comme avant (scénario `duplicate_validation`).
+- Aucun des 30 scénarios de qualification ne contient de contradiction : les attentes V1 sont inchangées (`tests/qualification/verifier_v1.py`, vérifié après la modification).
+
+Tests : `regles::decisions_contradictoires_signalees` (les deux ordres, OUI répété, autre proposition), `cli::decisions_contradictoires_bloquent_la_production`, `traitement::decisions_contradictoires_bloquent_la_production`.
+
 ## Défaut hérité corrigé
 
 La vérification du SGX produit a révélé un défaut du portage d'origine. `forme["childShapes"].as_array_mut()` utilise l'indexation mutable de `serde_json`, qui **ajoute `"childShapes": null` à chaque forme qui n'en a pas**, dans tous les modèles réécrits. Aucun test ne le voyait, car toutes les formes des fixtures avaient un `childShapes`. Le parcours utilise désormais `get_mut`, et un test couvre ce cas (`renommage_n_ajoute_aucune_cle`).

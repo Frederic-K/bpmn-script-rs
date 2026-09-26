@@ -127,7 +127,7 @@
       {:else if ecran === "correspondances"}
         <EtapeCorrespondances {etat} {executer} {naviguer} occupe={!!occupe} />
       {:else if ecran === "analyse"}
-        <EtapeAnalyse {etat} {executer} {naviguer} occupe={!!occupe} />
+        <EtapeAnalyse {etat} {naviguer} occupe={!!occupe} />
       {:else if ecran === "decisions"}
         <EtapeDecisions {etat} {executer} {naviguer} occupe={!!occupe} />
       {:else}

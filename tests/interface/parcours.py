@@ -221,22 +221,51 @@ try:
     attendre_titre("Analyse")
     lignes = fenetre.find_elements(By.CSS_SELECTOR, "tbody tr")
     verifier(len(lignes) == 2, "analyse : 2 propositions (un modèle homonyme par ligne)")
+    # Revue du parcours : le classeur d'analyse (qui a lui aussi une colonne
+    # Validation) n'est plus proposé à l'ouverture.
+    verifier(not fenetre.find_elements(By.XPATH, "//button[normalize-space()=\"Ouvrir l'analyse\"]"), "analyse : pas d'ouverture du classeur d'analyse")
     capture("analyse")
 
-    # Décisions : un OUI, une valeur non reconnue.
+    # Décisions contradictoires (OUI puis NON sur la même proposition) : bloquant.
     cliquer("Passer aux décisions")
     attendre_titre("Décisions")
+    verifier(bouton("Enregistrer une copie à transmettre").is_enabled(), "voie « faire valider » proposée")
     edition_decisions = dossier / "edition" / "validation_modifications.xlsx"
     classeur = load_workbook(edition_decisions)
     feuille = classeur["Analyse"]
+    ligne_a = next(ligne for ligne in range(2, feuille.max_row + 1) if feuille.cell(ligne, 6).value == MODELE_A)
+    copie_ligne = [feuille.cell(ligne_a, colonne).value for colonne in range(1, feuille.max_column + 1)]
+    feuille.cell(ligne_a, 5).value = "OUI"
+    copie_ligne[4] = "NON"
+    feuille.append(copie_ligne)
+    classeur.save(edition_decisions)
+    cliquer("Lire le classeur de décision")
+    attendre_texte("ont reçu à la fois OUI et NON")
+    verifier("décisions contraires pour « Serv. achats »" in fenetre.find_element(By.TAG_NAME, "main").text, "contradiction : lignes citées")
+    verifier(not bouton("Générer le SGX modifié").is_enabled(), "contradiction : génération impossible")
+    capture("decisions-contradictoires")
+
+    # Décisions : un OUI, une valeur non reconnue.
+    classeur = load_workbook(edition_decisions)
+    feuille = classeur["Analyse"]
+    feuille.delete_rows(feuille.max_row)
     for ligne in range(2, feuille.max_row + 1):
         modele = feuille.cell(ligne, 6).value
         feuille.cell(ligne, 5).value = "OUI" if modele == MODELE_A else "à voir"
     classeur.save(edition_decisions)
-    cliquer("Lire et contrôler les décisions")
+    cliquer("Lire le classeur de décision")
     attendre_texte("le recomptage en mémoire est conforme")
+    attendre_texte("depuis le classeur de décision du traitement")
+    attendre_texte("La génération appliquera 1 décision(s) admise(s), soit 2 occurrence(s).")
     verifier("Validation « À VOIR » non reconnue" in fenetre.find_element(By.TAG_NAME, "main").text, "motif de la ligne en attente affiché")
     capture("decisions-controlees")
+
+    # Import d'un retour au mauvais format : refusé, les décisions lues restent.
+    cliquer("Importer le retour du valideur")
+    remplir_dialogue("Choisir un classeur Excel", edition_correspondances)
+    attendre_texte("Classeur non adopté. Les décisions lues le")
+    verifier(bouton("Générer le SGX modifié").is_enabled(), "import refusé : décisions précédentes toujours utilisables")
+    capture("decisions-import-refuse")
 
     # Revue D02 : relire des correspondances identiques ne perd pas le contrôle.
     aller_a_l_etape("correspondances")
@@ -277,7 +306,7 @@ try:
     classeur.save(edition_decisions)
     fenetre.execute_script("window.dispatchEvent(new Event('focus'))")
     aller_a_l_etape("decisions")
-    attendre_texte("Ce classeur a changé depuis sa dernière lecture")
+    attendre_texte("Le classeur de décision a changé depuis sa dernière lecture")
     etape = fenetre.find_element(By.XPATH, "//nav//button[@aria-current='step']").text
     verifier("à relire" in etape, f"l'étape signale le classeur à relire ({etape!r})")
     verifier(not bouton("Générer le SGX modifié").is_enabled(), "génération suspendue tant que le classeur n'est pas relu")
@@ -287,6 +316,24 @@ try:
     admises = fenetre.find_element(By.CSS_SELECTOR, "[data-bilan='admises']").text
     verifier("à actualiser" in admises, f"bilan latéral signalé à actualiser ({admises!r})")
     capture("decisions-a-relire")
+
+    # Correspondances modifiées dans Excel : l'analyse est « à actualiser ».
+    ecrire_classeur(
+        edition_correspondances,
+        "Correspondance",
+        [["Nom actuel", "Nouveau nom"], ["Serv. achats", "Service des achats"], ["Achat", "Achats"]],
+    )
+    fenetre.execute_script("window.dispatchEvent(new Event('focus'))")
+    aller_a_l_etape("analyse")
+    attendre_titre("Analyse")
+    attendre_texte("Dernière analyse — à actualiser")
+    verifier(fenetre.find_elements(By.CSS_SELECTOR, "[data-analyse='a-actualiser']"), "analyse : tableau marqué à actualiser")
+    etape = fenetre.find_element(By.XPATH, "//nav//button[@aria-current='step']").text
+    verifier("à actualiser" in etape, f"étape Analyse à actualiser ({etape!r})")
+    propositions = fenetre.find_element(By.CSS_SELECTOR, "[data-bilan='propositions']").text
+    verifier("à actualiser" in propositions, f"bilan : propositions à actualiser ({propositions!r})")
+    verifier(not bouton("Passer aux décisions").is_enabled(), "analyse à actualiser : passage aux décisions suspendu")
+    capture("analyse-a-actualiser")
     aller_a_l_etape("resultat")
     attendre_titre("Résultat")
     attendre_texte("ce résultat correspond aux dernières entrées lues")

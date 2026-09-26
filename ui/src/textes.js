@@ -22,7 +22,6 @@ export const textes = {
     fermeture: "Fermeture",
     ouvertureDossier: "Ouverture du dossier",
     ouvertureClasseur: "Ouverture du classeur",
-    ouvertureAnalyse: "Ouverture de l'analyse",
     ouvertureRapport: "Ouverture du rapport",
     lectureCorrespondances: "Lecture des correspondances",
     preparationAnalyse: "Préparation de l'analyse",
@@ -39,6 +38,7 @@ export const textes = {
     decisions: "Décisions",
     resultat: "Résultat",
     aRelire: "à relire",
+    aActualiser: "à actualiser",
     terminee: "terminée",
     enCours: "en cours",
   },
@@ -94,13 +94,21 @@ export const textes = {
     fermerAvantLecture: "Enregistrez puis fermez le classeur avant de le lire.",
     etiquetteLu: "Lu",
     lus: (nombre) => `${nombre} nom(s) avec une demande de renommage ont été lus.`,
+    etiquetteUtilise: "Utilisé",
+    lecture: (date, fichier, classeurDuTraitement) =>
+      classeurDuTraitement
+        ? `Correspondances lues le ${date} depuis le classeur du traitement.`
+        : `Correspondances importées le ${date} depuis « ${fichier} ». Ce fichier n'est plus relu : pour corriger, modifiez le classeur du traitement puis relisez-le.`,
+    etiquetteNonAdopte: "Non adopté",
+    nonAdopte: (date) => `Classeur non adopté. Les correspondances lues le ${date} restent utilisées.`,
     etiquetteAVerifier: "À vérifier",
     nomsInconnus: "Ces noms n'existent pas dans l'inventaire et n'auront aucun effet (faute de frappe ?) :",
-    etiquetteInformation: "Information",
-    nomsEnDoublon: "Ces noms sont renseignés plusieurs fois ; la dernière ligne est retenue :",
+    nomsEnDoublon: "Ces noms sont renseignés plusieurs fois ; seule la dernière ligne est retenue. Vérifiez que c'est voulu :",
     lire: "Lire les correspondances",
     relire: "Relire les correspondances",
     importer: "Importer un classeur de correspondances",
+    importerExplication:
+      "Un classeur importé remplace les correspondances lues et devient le classeur du traitement ; l'analyse et les décisions seront à refaire.",
     voirAnalyse: "Voir l'analyse",
     preparerAnalyse: "Préparer l'analyse",
   },
@@ -112,6 +120,9 @@ export const textes = {
     etiquetteResultat: "Résultat",
     aucunChangement: "Aucun changement proposé. Vérifiez les nouveaux noms renseignés.",
     retourCorrespondances: "Revenir aux correspondances",
+    etiquetteAActualiser: "À actualiser",
+    aActualiser:
+      "Dernière analyse — à actualiser : le classeur de correspondance a changé. Relisez les correspondances, puis préparez l'analyse avant de reprendre la validation.",
     apercu: "Aperçu en lecture seule des changements proposés. Rien n'est encore modifié.",
     propositions: "propositions",
     occurrences: "occurrences visées",
@@ -122,29 +133,40 @@ export const textes = {
     colonneNouveauNom: "Nouveau nom",
     colonneOccurrences: "Occ.",
     colonneFichier: "Fichier modèle",
-    etiquetteCopie: "Copie",
-    copieEnregistree: (chemin) => `Copie enregistrée pour arbitrage : ${chemin}`,
     suivant: "Passer aux décisions",
-    ouvrir: "Ouvrir l'analyse",
-    copier: "Enregistrer une copie pour arbitrage",
   },
 
   decisions: {
     titre: "Décisions",
     consigne:
-      "Renseignez OUI ou NON dans la colonne Validation, puis lisez le classeur enregistré. Les lignes absentes ne seront pas appliquées.",
-    ouvrir: "Ouvrir le classeur de décision",
+      "Chaque proposition attend OUI ou NON dans la colonne Validation. Seules les lignes OUI conformes seront appliquées ; une ligne sans réponse n'autorise rien.",
     etiquetteARelire: "À relire",
     aRelire:
-      "Ce classeur a changé depuis sa dernière lecture. Relisez-le pour actualiser le traitement ; la génération est suspendue d'ici là.",
+      "Le classeur de décision a changé depuis sa dernière lecture. Relisez-le pour actualiser le traitement ; la génération est suspendue d'ici là.",
     correspondancesARelire:
-      "Le classeur de correspondance a changé depuis sa dernière lecture. Relisez-le avant de générer le SGX.",
-    etiquetteInfo: "Info",
-    fermerAvantLecture:
-      "Enregistrez puis fermez le classeur avant de le lire. Un retour d'arbitre s'importe tel quel : il est contrôlé ligne par ligne contre l'analyse.",
-    lire: "Lire et contrôler les décisions",
-    relire: "Relire et contrôler les décisions",
-    importer: "Importer un retour d'arbitrage",
+      "Le classeur de correspondance a changé depuis sa dernière lecture. Relisez les correspondances et préparez l'analyse avant de valider.",
+    localTitre: "Je valide moi-même",
+    localConsigne:
+      "Ouvrez le classeur de décision et renseignez uniquement la colonne Validation (OUI ou NON). Enregistrez et fermez Excel, puis lisez le classeur.",
+    ouvrir: "Ouvrir le classeur de décision",
+    lire: "Lire le classeur de décision",
+    externeTitre: "Je fais valider par une autre personne",
+    externeConsigne:
+      "Enregistrez une copie à transmettre. Le valideur renseigne uniquement la colonne Validation, sans modifier les autres colonnes.",
+    copier: "Enregistrer une copie à transmettre",
+    copieSansEcrasement: "Choisissez un nouveau nom : aucun fichier existant n'est remplacé.",
+    etiquetteCopie: "Copie",
+    copieEnregistree: (chemin) => `Copie enregistrée : ${chemin}`,
+    importerConsigne:
+      "À son retour, importez le fichier. Il remplace toutes les décisions lues jusqu'ici (aucune fusion) et devient le classeur de décision du traitement.",
+    importer: "Importer le retour du valideur",
+    etiquetteUtilisees: "Utilisées",
+    lecture: (date, fichier, classeurDuTraitement) =>
+      classeurDuTraitement
+        ? `Décisions lues le ${date} depuis le classeur de décision du traitement.`
+        : `Décisions importées le ${date} depuis « ${fichier} ». Ce fichier n'est plus relu : pour corriger, modifiez le classeur de décision puis relisez-le.`,
+    etiquetteNonAdopte: "Non adopté",
+    nonAdopte: (date) => `Classeur non adopté. Les décisions lues le ${date} restent utilisées.`,
     dernierControle: "Dernier contrôle",
     dernierControleAActualiser: "Dernier contrôle — à actualiser",
     admises: "Admises",
@@ -164,12 +186,16 @@ export const textes = {
     colonneResultat: "Résultat",
     colonneMotif: "Motif",
     etiquetteBloquant: "Bloquant",
+    contradictions:
+      "Des propositions ont reçu à la fois OUI et NON. Aucun nouveau SGX ne peut être créé : gardez une seule réponse par proposition, puis relisez le classeur.",
     bloquant:
       "Les modifications ne correspondent pas aux occurrences attendues. Aucun nouveau SGX ne peut être créé : corrigez les décisions ou les correspondances.",
     etiquetteAucunSgx: "Aucun SGX",
     aucuneAdmissible: "Aucune décision admissible : aucun SGX ne peut être généré.",
     etiquetteControle: "Contrôlé",
     controle: "Décisions contrôlées contre l'analyse ; le recomptage en mémoire est conforme.",
+    seraApplique: (lignes, occurrences) =>
+      `La génération appliquera ${lignes} décision(s) admise(s), soit ${occurrences} occurrence(s). Aucune autre ligne n'est appliquée.`,
     generer: "Générer le SGX modifié",
     ouvrirRapport: "Ouvrir le rapport de contrôle",
   },
@@ -188,6 +214,7 @@ export const textes = {
     fichierAbsent: "Ce fichier a été supprimé depuis sa production.",
     fichierModifie: "Ce fichier a été modifié depuis sa production : il ne correspond plus au résultat vérifié.",
     enregistrerCopie: "Enregistrer une copie",
+    copieSansEcrasement: "Choisissez un nouveau nom : aucun fichier existant n'est remplacé.",
     etiquetteCopie: "Copie",
     copieEnregistree: (chemin) => `Copie enregistrée : ${chemin}`,
     modeles: "modèles concernés par la production",
@@ -201,7 +228,7 @@ export const textes = {
     etiquetteAucunSgx: "Aucun SGX",
     aucunSgx: (cause) => `Aucun nouveau SGX n'a été créé : ${cause}`,
     causeAucuneAdmissible: "aucune décision admissible (lignes refusées, en attente ou non conformes).",
-    causeBloquant: "le recomptage des occurrences ne correspond pas aux décisions.",
+    causeBloquant: "le contrôle est bloquant (décisions contradictoires ou recomptage non conforme) ; voir le rapport de contrôle.",
     retourDecisions: "Revenir aux décisions",
     aucunResultat: "Aucun résultat pour les correspondances et décisions actuellement lues.",
     precedents: "Résultats précédents",

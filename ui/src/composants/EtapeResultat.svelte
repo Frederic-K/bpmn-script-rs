@@ -59,6 +59,9 @@
       <Bouton disabled={occupe} onclick={enregistrerCopie}>{texte.enregistrerCopie}</Bouton>
     {/if}
   </Fichier>
+  {#if courante.etat_sgx === "Disponible"}
+    <p class="text-xs text-encre-2">{texte.copieSansEcrasement}</p>
+  {/if}
   {#if copie}
     <Message type="ok" etiquette={texte.etiquetteCopie} titre={texte.copieEnregistree(copie)} />
   {/if}

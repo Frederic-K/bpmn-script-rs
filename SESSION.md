@@ -4,7 +4,7 @@ Développement réalisé par Claude (Claude Code, session cloud Linux), à parti
 
 ## Où en est le projet
 
-`main` (commit `737867a`) contient les lots M0 à M6, un commit par lot, historique linéaire.
+`main` contient les lots M0 à M6 (un commit par lot, historique linéaire), puis les corrections des revues Codex (voir ci-dessous).
 
 | Lot | Commit | Livré | Compte rendu |
 |---|---|---|---|
@@ -39,6 +39,8 @@ La procédure et le tableau à remplir sont dans [docs/m6-qualification.md](docs
 | Anomalie de modèle | Bloque tout le traitement (pas d'inventaire partiel) | M3 (P03) |
 | Dialogues | Côté Rust, ouverts dans Documents ; l'interface n'a aucune permission de fichier ni de shell | M5 |
 | Revue Codex de `623fb56` | D01 à D08 corrigés sur la branche `claude/corrections-revue` (voir ci-dessous) ; architecture conservée | Revue indépendante |
+| Décisions contradictoires | OUI et NON sur la même proposition bloquent la production (évolution V1, `docs/m3-contrats-v1.md`) | Revue du parcours ; propriétaire : « pas de faille liée à une mauvaise manipulation » |
+| Parcours des décisions | Un seul classeur de décision ; deux voies sur l'écran Décisions (valider soi-même, faire valider) ; le classeur d'analyse n'est plus proposé à l'ouverture | Revue du parcours |
 | Installateur | NSIS, installation par utilisateur (sans droits admin), WebView2 téléchargé seulement s'il manque | M6 |
 
 ## Défauts trouvés et corrigés
@@ -63,15 +65,33 @@ La procédure et le tableau à remplir sont dans [docs/m6-qualification.md](docs
 
 Règles de renommage, contrôles et attentes V1 inchangés.
 
+### Revue du parcours et comparaison avec Python (commit `abe5311`)
+
+| Constat | Correction | Preuve |
+|---|---|---|
+| P1 : OUI et NON sur la même proposition autorisaient la modification (hérité du Python) | Contradiction détectée dans `regles::controler_decisions` ; statut bloquant, lignes citées ; OUI répété toujours bloqué par le recomptage (R09) | Tests unitaire, CLI et traitement ; bout en bout ; 30 scénarios V1 inchangés |
+| P2 : OUI saisis dans le classeur d'analyse au lieu du classeur de décision | Le classeur d'analyse n'est plus proposé à l'ouverture ; écran Décisions en deux voies : « Je valide moi-même », « Je fais valider par une autre personne » (copie à transmettre, import du retour) | Bout en bout |
+| P2 : provenance des décisions ambiguë (retour modifié après import, retours successifs, import refusé) | `Etat.decisions_lues` et `correspondances_lues` : fichier lu, date, classeur du traitement ou import ; messages « Décisions lues/importées le … », « Classeur non adopté … restent utilisées », « remplace … aucune fusion » | Tests de contrat (traitement) ; bout en bout |
+| R1 : copie enregistrée écrite directement sous son nom final | `fichiers::copier_sans_ecraser` : temporaire `.copie-en-cours` complet, synchronisé, relu, puis publication par lien physique | Tests : destination existante ou apparue entre-temps, alias de la source, erreur après création, temporaire resté d'une interruption |
+| R2 : analyse obsolète non signalée | « Dernière analyse — à actualiser » (écran, étape, bilan latéral) ; passage aux décisions suspendu | Bout en bout |
+| R3 : cache Python versionné | Retiré, ignoré | — |
+
+Constats de ma propre relecture, corrigés au passage :
+- `sgx::produire_sgx` publiait le SGX par `exists()` puis `rename`. Sous Windows, `rename` remplace un fichier existant. La publication passe maintenant par le même `publier_sans_ecraser`.
+- L'étape Décisions était cochée « terminée » même sur un contrôle bloquant. Elle ne l'est plus que si la génération est possible.
+- Composant `Fichier` : dans une colonne étroite, le nom devenait illisible (une lettre par ligne). Les actions passent maintenant à la ligne.
+
+Documenté pour l'opérateur et le propriétaire : [docs/guide.md](docs/guide.md) (fichiers du traitement, garanties, correspondance code / Python) ; essais Excel réels à faire sous Windows : `docs/m6-qualification.md`, étape 6.
+
 ## Preuves
 
 | Contrôle | Résultat |
 |---|---|
-| `cargo test --workspace --locked` | 83 tests : 26 unitaires, 2 de bibliothèque, 33 CLI, 20 de traitement, 2 de l'adaptateur. Sous Linux ; sous Windows pour les 81 d'avant la revue (les 83 le seront par l'intégration continue Windows) |
+| `cargo test --workspace --locked` | 90 tests : 29 unitaires du moteur, 2 de chemins, 34 CLI, 24 de traitement, 1 de l'adaptateur. Sous Linux ; sous Windows par l'intégration continue |
 | Clippy (`-D warnings`), rustfmt, `npm run build` | Propres, sans avertissement |
-| Qualification V1 (30 scénarios comparés au Python d'origine) | Conforme sous Linux et avec le binaire Windows (`tests/qualification/verifier_v1.py`) |
-| Test de bout en bout de la vraie application (Linux, WebKitGTK) | 23 contrôles réussis après les corrections de la revue, dont le double clic sur « Générer » (une seule tentative), le classeur modifié qui suspend la génération, et les transitions D02, D03, D04, D08 |
-| Windows (GitHub Actions) | Tests, installateur, qualification et lancement réussis : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36253157042 |
+| Qualification V1 (30 scénarios comparés au Python d'origine) | Conforme sous Linux (rejouée après la règle des contradictions) et avec le binaire Windows (`tests/qualification/verifier_v1.py`) |
+| Test de bout en bout de la vraie application (Linux, WebKitGTK) | 32 contrôles réussis, dont : double clic sur « Générer » (une seule tentative), classeur modifié qui suspend la génération, D02, D03, D04, D08, contradiction bloquante, import refusé, provenance des décisions, analyse à actualiser |
+| Windows (GitHub Actions) | Tests, installateur, qualification et lancement réussis sur `abe5311` : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36264584759 ; à reconsulter pour la branche `claude/revue-parcours` |
 | Mutations volontaires du code (M1) | 5 sur 5 détectées par les tests |
 
 **Non vérifié :**
