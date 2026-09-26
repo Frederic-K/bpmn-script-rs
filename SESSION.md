@@ -38,6 +38,7 @@ La procédure et le tableau à remplir sont dans [docs/m6-qualification.md](docs
 | Code de sortie du CLI | 0 = étape terminée, 1 = erreur, **2 = décisions fournies sans SGX produit** (auparavant 0) | M3 (P04) |
 | Anomalie de modèle | Bloque tout le traitement (pas d'inventaire partiel) | M3 (P03) |
 | Dialogues | Côté Rust, ouverts dans Documents ; l'interface n'a aucune permission de fichier ni de shell | M5 |
+| Revue Codex de `623fb56` | D01 à D08 corrigés sur la branche `claude/corrections-revue` (voir ci-dessous) ; architecture conservée | Revue indépendante |
 | Installateur | NSIS, installation par utilisateur (sans droits admin), WebView2 téléchargé seulement s'il manque | M6 |
 
 ## Défauts trouvés et corrigés
@@ -47,14 +48,29 @@ La procédure et le tableau à remplir sont dans [docs/m6-qualification.md](docs
 3. **Code 0 sans SGX.** Le CLI renvoyait 0 alors qu'aucun SGX n'était produit, et une ancienne sortie pouvait être écrasée (P04). Il renvoie maintenant 2, et une sortie existante n'est jamais écrasée.
 4. **Attributs ZIP.** Les commentaires et les champs supplémentaires de l'entrée réécrite étaient perdus, ainsi que le commentaire d'archive (P06). Ils sont maintenant conservés.
 
+### Corrections issues de la revue Codex (commit `623fb56`)
+
+| Constat | Correction | Preuve |
+|---|---|---|
+| D01 (P1) : « Enregistrer une copie » pouvait remplacer un fichier existant, y compris le SGX original | `copier_sans_ecraser` (`src-tauri/src/lib.rs`) : destination créée exclusivement (`create_new`), copie interrompue supprimée | Test `copie_sans_ecrasement` : fichier existant, source par trois alias, dossier absent |
+| D02 (P1) : relire des correspondances identiques (ou redemander l'analyse) remplaçait le bilan des décisions par un bilan partiel | `adopter_correspondances` et `preparer_analyse` conservent le dernier bilan quand rien ne change | Test `operations_repetees_conservent_le_dernier_bilan` (échoue sans la correction : `DecisionsAttendues, 0` au lieu de `ProductionPossible, 2`) ; bout en bout |
+| D03 : compteurs d'un contrôle obsolète présentés comme actuels | « Dernier contrôle — à actualiser » (Décisions), « à actualiser » (bilan latéral), avertissement sur l'écran Résultat | Bout en bout |
+| D04 : Analyse accessible avant sa préparation, affichée comme « aucun changement » | Étape accessible seulement si `analyse_preparee` ; l'écran distingue « non préparée » et « vide » | Bout en bout |
+| D05 : textes dispersés dans les composants | Catalogue `ui/src/textes.js` par écran | `npm run build` ; bout en bout (libellés inchangés) |
+| D06 : « occurrences renommées », « modèles modifiés » | « occurrences traitées », « modèles concernés par la production » | Relecture |
+| D07 : cause trop précise pour une analyse vide | « Aucun changement proposé. Vérifiez les nouveaux noms renseignés. » | Relecture |
+| D08 : Résultat inaccessible avec une seule tentative interrompue | Étape accessible dès qu'une tentative, même interrompue, existe | Bout en bout |
+
+Règles de renommage, contrôles et attentes V1 inchangés.
+
 ## Preuves
 
 | Contrôle | Résultat |
 |---|---|
-| `cargo test --workspace --locked` | 81 tests : 26 unitaires, 2 de bibliothèque, 33 CLI, 19 de traitement, 1 de l'adaptateur, **sous Linux et sous Windows** |
+| `cargo test --workspace --locked` | 83 tests : 26 unitaires, 2 de bibliothèque, 33 CLI, 20 de traitement, 2 de l'adaptateur. Sous Linux ; sous Windows pour les 81 d'avant la revue (les 83 le seront par l'intégration continue Windows) |
 | Clippy (`-D warnings`), rustfmt, `npm run build` | Propres, sans avertissement |
 | Qualification V1 (30 scénarios comparés au Python d'origine) | Conforme sous Linux et avec le binaire Windows (`tests/qualification/verifier_v1.py`) |
-| Test de bout en bout de la vraie application (Linux, WebKitGTK) | 3 exécutions sur 3, 14 contrôles chacune, dont le double clic sur « Générer » (une seule tentative) et le classeur modifié qui suspend la génération |
+| Test de bout en bout de la vraie application (Linux, WebKitGTK) | 23 contrôles réussis après les corrections de la revue, dont le double clic sur « Générer » (une seule tentative), le classeur modifié qui suspend la génération, et les transitions D02, D03, D04, D08 |
 | Windows (GitHub Actions) | Tests, installateur, qualification et lancement réussis : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36253157042 |
 | Mutations volontaires du code (M1) | 5 sur 5 détectées par les tests |
 

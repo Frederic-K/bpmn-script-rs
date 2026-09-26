@@ -1,37 +1,42 @@
 <script>
+  import { textes } from "../textes.js";
+
   let { etat, ecran, naviguer } = $props();
+  const texte = textes.etapes;
 
   // Une étape n'est accessible que si le moteur a produit ce qu'elle affiche.
   const etapes = $derived([
-    { id: "source", libelle: "Source", accessible: true, faite: true, aRelire: false },
+    { id: "source", libelle: texte.source, accessible: true, faite: true, aRelire: false },
     {
       id: "correspondances",
-      libelle: "Correspondances",
+      libelle: texte.correspondances,
       accessible: true,
       faite: etat.correspondances_adoptees,
       aRelire: etat.correspondances_a_relire,
     },
-    { id: "analyse", libelle: "Analyse", accessible: etat.correspondances_adoptees, faite: etat.analyse_preparee, aRelire: false },
+    // Analyse non préparée : les propositions ne sont pas calculées, ce n'est pas une analyse vide.
+    { id: "analyse", libelle: texte.analyse, accessible: etat.analyse_preparee, faite: etat.analyse_preparee, aRelire: false },
     {
       id: "decisions",
-      libelle: "Décisions",
+      libelle: texte.decisions,
       accessible: etat.analyse_preparee && etat.propositions.length > 0,
       faite: etat.decisions_adoptees,
       aRelire: etat.decisions_a_relire,
     },
     {
       id: "resultat",
-      libelle: "Résultat",
-      accessible: etat.tentatives.length > 0,
+      libelle: texte.resultat,
+      // Une tentative interrompue seule doit rester consultable (son dossier y est indiqué).
+      accessible: etat.tentatives.length > 0 || etat.tentatives_interrompues.length > 0,
       faite: etat.etape === "ResultatProduit",
       aRelire: false,
     },
   ]);
 
   function etatDeLEtape(etape) {
-    if (etape.aRelire) return "à relire";
-    if (etape.faite) return "terminée";
-    if (etape.id === ecran) return "en cours";
+    if (etape.aRelire) return texte.aRelire;
+    if (etape.faite) return texte.terminee;
+    if (etape.id === ecran) return texte.enCours;
     return "";
   }
 
@@ -46,7 +51,7 @@
   class="grid content-start gap-0.5 overflow-y-auto border-r border-trait px-2.5 py-3.5
     max-[980px]:auto-cols-[minmax(96px,1fr)] max-[980px]:grid-flow-col max-[980px]:overflow-x-auto
     max-[980px]:border-r-0 max-[980px]:border-b"
-  aria-label="Étapes du traitement"
+  aria-label={texte.navigation}
 >
   {#each etapes as etape, index}
     <button

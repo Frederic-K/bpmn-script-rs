@@ -1,6 +1,7 @@
 <script>
   import { tick } from "svelte";
   import * as moteur from "./moteur.js";
+  import { textes } from "./textes.js";
   import Accueil from "./composants/Accueil.svelte";
   import Bouton from "./composants/Bouton.svelte";
   import Etapes from "./composants/Etapes.svelte";
@@ -60,7 +61,7 @@
   }
 
   async function fermer() {
-    if ((await executer("Fermeture", moteur.fermerTraitement)) !== undefined) {
+    if ((await executer(textes.actions.fermeture, moteur.fermerTraitement)) !== undefined) {
       etat = null;
       naviguer("source");
     }
@@ -88,18 +89,18 @@
 
 <div class="grid h-full grid-rows-[auto_1fr]">
   <header class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-trait bg-surface px-4 py-2.5">
-    <span class="font-semibold">BPMN-Script</span>
+    <span class="font-semibold">{textes.application.nom}</span>
     {#if etat}
       <span class="text-encre-2 [overflow-wrap:anywhere]">· {etat.nom}</span>
     {/if}
     <span class="flex-1"></span>
     {#if etat}
-      <Bouton disabled={!!occupe} onclick={() => executer("Ouverture du dossier", () => moteur.afficherDansDossier(etat.dossier))}>
-        Afficher le dossier du traitement
+      <Bouton disabled={!!occupe} onclick={() => executer(textes.actions.ouvertureDossier, () => moteur.afficherDansDossier(etat.dossier))}>
+        {textes.application.afficherDossier}
       </Bouton>
-      <Bouton disabled={!!occupe} onclick={fermer}>Fermer le traitement</Bouton>
+      <Bouton disabled={!!occupe} onclick={fermer}>{textes.application.fermer}</Bouton>
     {/if}
-    <Bouton aria-pressed={theme === "dark"} onclick={basculerTheme}>Thème sombre</Bouton>
+    <Bouton aria-pressed={theme === "dark"} onclick={basculerTheme}>{textes.application.themeSombre}</Bouton>
   </header>
 
   <div
@@ -116,7 +117,7 @@
       bind:this={contenu}
     >
       {#if erreur}
-        <Message type="erreur" etiquette="Erreur" titre={erreur.message} details={erreur.details} />
+        <Message type="erreur" etiquette={textes.application.etiquetteErreur} titre={erreur.message} details={erreur.details} />
       {/if}
 
       {#if !etat}

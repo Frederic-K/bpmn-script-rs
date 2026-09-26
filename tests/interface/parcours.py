@@ -174,6 +174,25 @@ try:
     verifier(dossier.joinpath("traitement.json").exists(), "dossier de traitement créé")
     capture("source")
 
+    # Tentative interrompue avant toute production (revue D08) : l'écran
+    # Résultat reste consultable pour en donner le dossier, sans succès affiché.
+    etape_resultat = "nav button[data-etape='resultat']"
+    verifier(not fenetre.find_element(By.CSS_SELECTOR, etape_resultat).is_enabled(), "résultat inaccessible sans tentative")
+    interrompue = dossier / "sorties" / "tentative-001"
+    interrompue.mkdir(parents=True)
+    fenetre.execute_script("window.dispatchEvent(new Event('focus'))")
+    attente.until(lambda _: fenetre.find_element(By.CSS_SELECTOR, etape_resultat).is_enabled())
+    aller_a_l_etape("resultat")
+    attendre_titre("Résultat")
+    attendre_texte("Une production a été interrompue")
+    verifier("SGX produit" not in fenetre.find_element(By.TAG_NAME, "main").text, "tentative interrompue non présentée comme un résultat")
+    capture("resultat-interrompu")
+    interrompue.rmdir()
+    fenetre.execute_script("window.dispatchEvent(new Event('focus'))")
+    attente.until(lambda _: not fenetre.find_element(By.CSS_SELECTOR, etape_resultat).is_enabled())
+    aller_a_l_etape("source")
+    attendre_titre("Source")
+
     # Correspondances : d'abord une cellule invalide, puis un classeur valide.
     cliquer("Préparer les correspondances")
     attendre_titre("Correspondances")
@@ -193,6 +212,8 @@ try:
     cliquer("Lire les correspondances")
     attendre_texte("2 nom(s) avec une demande de renommage ont été lus.")
     attendre_texte("« Achat »")
+    # Revue D04 : l'analyse n'est pas accessible avant d'être préparée.
+    verifier(not fenetre.find_element(By.CSS_SELECTOR, "nav button[data-etape='analyse']").is_enabled(), "analyse inaccessible avant sa préparation")
     capture("correspondances-lues")
 
     # Analyse
@@ -216,6 +237,18 @@ try:
     attendre_texte("le recomptage en mémoire est conforme")
     verifier("Validation « À VOIR » non reconnue" in fenetre.find_element(By.TAG_NAME, "main").text, "motif de la ligne en attente affiché")
     capture("decisions-controlees")
+
+    # Revue D02 : relire des correspondances identiques ne perd pas le contrôle.
+    aller_a_l_etape("correspondances")
+    attendre_titre("Correspondances")
+    cliquer("Relire les correspondances")
+    attendre_texte("2 nom(s) avec une demande de renommage ont été lus.")
+    aller_a_l_etape("decisions")
+    attendre_titre("Décisions")
+    attendre_texte("le recomptage en mémoire est conforme")
+    verifier(bouton("Générer le SGX modifié").is_enabled(), "relecture identique : génération toujours possible")
+    admises = fenetre.find_element(By.CSS_SELECTOR, "[data-bilan='admises']").text
+    verifier(admises == "1", f"relecture identique : 1 décision admise conservée ({admises!r})")
 
     # Thème sombre : bascule, capture, puis retour au thème clair.
     theme = lambda: fenetre.execute_script("return document.documentElement.dataset.theme")
@@ -248,7 +281,15 @@ try:
     etape = fenetre.find_element(By.XPATH, "//nav//button[@aria-current='step']").text
     verifier("à relire" in etape, f"l'étape signale le classeur à relire ({etape!r})")
     verifier(not bouton("Générer le SGX modifié").is_enabled(), "génération suspendue tant que le classeur n'est pas relu")
+    # Revue D03 : les compteurs sont présentés comme ceux du dernier contrôle.
+    controle = fenetre.find_element(By.CSS_SELECTOR, "[data-controle='a-actualiser'] h2").text
+    verifier(controle == "Dernier contrôle — à actualiser", f"compteurs signalés à actualiser ({controle!r})")
+    admises = fenetre.find_element(By.CSS_SELECTOR, "[data-bilan='admises']").text
+    verifier("à actualiser" in admises, f"bilan latéral signalé à actualiser ({admises!r})")
     capture("decisions-a-relire")
+    aller_a_l_etape("resultat")
+    attendre_titre("Résultat")
+    attendre_texte("ce résultat correspond aux dernières entrées lues")
 
     # Fermeture puis reprise du traitement.
     cliquer("Fermer le traitement")

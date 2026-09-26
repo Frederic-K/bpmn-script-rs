@@ -1,12 +1,15 @@
 <script>
   import * as moteur from "../moteur.js";
+  import { textes } from "../textes.js";
   import Bouton from "./Bouton.svelte";
   import Chiffre from "./Chiffre.svelte";
   import Message from "./Message.svelte";
   import Tableau from "./Tableau.svelte";
 
   let { etat, executer, naviguer, occupe } = $props();
+  const texte = textes.analyse;
 
+  // Tant que l'analyse n'est pas préparée, la liste vide ne signifie pas « aucun changement ».
   const propositions = $derived(etat.propositions);
   const occurrencesVisees = $derived(propositions.reduce((total, proposition) => total + proposition.occurrences, 0));
   const modelesConcernes = $derived(new Set(propositions.map((proposition) => proposition.fichier_modele)).size);
@@ -14,34 +17,38 @@
   let copie = $state(null);
 
   async function enregistrerCopie() {
-    const destination = await executer("Enregistrement de la copie", () => moteur.enregistrerCopie(etat.fichier_analyse));
+    const destination = await executer(textes.actions.copie, () => moteur.enregistrerCopie(etat.fichier_analyse));
     if (destination) copie = destination;
   }
 </script>
 
-<h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">Analyse</h1>
+<h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">{texte.titre}</h1>
 
-{#if propositions.length === 0}
-  <Message type="info" etiquette="Résultat" titre="Aucun changement proposé. Vérifiez les nouveaux noms renseignés : aucun nom actuel ne correspond à l'inventaire.">
-    <Bouton onclick={() => naviguer("correspondances")}>Revenir aux correspondances</Bouton>
+{#if !etat.analyse_preparee}
+  <Message type="info" etiquette={texte.etiquetteNonPreparee} titre={texte.nonPreparee}>
+    <Bouton onclick={() => naviguer("correspondances")}>{texte.retourCorrespondances}</Bouton>
+  </Message>
+{:else if propositions.length === 0}
+  <Message type="info" etiquette={texte.etiquetteResultat} titre={texte.aucunChangement}>
+    <Bouton onclick={() => naviguer("correspondances")}>{texte.retourCorrespondances}</Bouton>
   </Message>
 {:else}
-  <p class="max-w-[72ch] text-encre-2">Aperçu en lecture seule des changements proposés. Rien n'est encore modifié.</p>
+  <p class="max-w-[72ch] text-encre-2">{texte.apercu}</p>
 
   <div class="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
-    <Chiffre valeur={propositions.length} libelle="propositions" />
-    <Chiffre valeur={occurrencesVisees} libelle="occurrences visées" />
-    <Chiffre valeur={modelesConcernes} libelle="modèles concernés" />
+    <Chiffre valeur={propositions.length} libelle={texte.propositions} />
+    <Chiffre valeur={occurrencesVisees} libelle={texte.occurrences} />
+    <Chiffre valeur={modelesConcernes} libelle={texte.modeles} />
   </div>
 
-  <Tableau legende="Une ligne par modèle et par nom ; des flux homonymes restent distincts par leur fichier modèle.">
+  <Tableau legende={texte.legende}>
     <thead>
       <tr>
-        <th scope="col">Flux</th>
-        <th scope="col">Nom actuel</th>
-        <th scope="col">Nouveau nom</th>
-        <th scope="col" class="text-right">Occ.</th>
-        <th scope="col">Fichier modèle</th>
+        <th scope="col">{texte.colonneFlux}</th>
+        <th scope="col">{texte.colonneNomActuel}</th>
+        <th scope="col">{texte.colonneNouveauNom}</th>
+        <th scope="col" class="text-right">{texte.colonneOccurrences}</th>
+        <th scope="col">{texte.colonneFichier}</th>
       </tr>
     </thead>
     <tbody>
@@ -58,14 +65,14 @@
   </Tableau>
 
   {#if copie}
-    <Message type="ok" etiquette="Copie" titre="Copie enregistrée pour arbitrage : {copie}" />
+    <Message type="ok" etiquette={texte.etiquetteCopie} titre={texte.copieEnregistree(copie)} />
   {/if}
 
   <div class="flex flex-wrap items-center gap-2">
-    <Bouton principal disabled={occupe} onclick={() => naviguer("decisions")}>Passer aux décisions</Bouton>
-    <Bouton disabled={occupe} onclick={() => executer("Ouverture de l'analyse", () => moteur.ouvrirFichier(etat.fichier_analyse))}>
-      Ouvrir l'analyse
+    <Bouton principal disabled={occupe} onclick={() => naviguer("decisions")}>{texte.suivant}</Bouton>
+    <Bouton disabled={occupe} onclick={() => executer(textes.actions.ouvertureAnalyse, () => moteur.ouvrirFichier(etat.fichier_analyse))}>
+      {texte.ouvrir}
     </Bouton>
-    <Bouton disabled={occupe} onclick={enregistrerCopie}>Enregistrer une copie pour arbitrage</Bouton>
+    <Bouton disabled={occupe} onclick={enregistrerCopie}>{texte.copier}</Bouton>
   </div>
 {/if}

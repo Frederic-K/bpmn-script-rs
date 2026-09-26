@@ -12,6 +12,7 @@ BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des
 - **Interface : Svelte 5 en JavaScript uniquement.** Aucun `.ts`, aucun `lang="ts"`, aucune configuration TypeScript. Pas de store global, pas de mémoïsation, pas d'habitudes React.
 - Composants aux responsabilités claires : ni composant monolithique, ni micro-composants.
 - **Styles : Tailwind CSS v4**, en classes utilitaires dans les composants. Les couleurs sont définies une seule fois dans `@theme` (`ui/src/style.css`) et le thème sombre redéfinit ces variables : pas de classes `dark:`. Les éléments répétés sont des composants (`Bouton`, `Pastille`, `Chiffre`, `Tableau`), jamais des classes `@apply`. Les classes choisies en JavaScript sont écrites en entier (Tailwind ne détecte pas les noms construits).
+- **Textes de l'interface** : tous dans `ui/src/textes.js`, regroupés par écran ; une phrase à paramètres est une fonction. Pas de bibliothèque ni de sélecteur de langue. Les messages d'erreur et motifs de contrôle viennent du moteur Rust et sont affichés tels quels.
 - **Thème** : bascule clair/sombre par `data-theme` sur `<html>` (`main.js` à l'ouverture, `basculerTheme` dans `App.svelte`), choix mémorisé dans `localStorage`, thème du système au premier lancement.
 
 ## Structure
@@ -28,6 +29,7 @@ BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des
 | `src-tauri/src/lib.rs` | Commandes Tauri : une par opération, dialogues, ouverture de fichiers limitée au traitement |
 | `ui/src/App.svelte` | Seul détenteur de l'état de l'interface ; `executer` : une action à la fois |
 | `ui/src/moteur.js` | Une fonction par commande Tauri |
+| `ui/src/textes.js` | Catalogue des textes français de l'interface, par écran |
 | `ui/src/composants/` | Un composant par étape ; `Etapes`, `BilanTraitement`, `Message`, `Fichier` ; éléments répétés `Bouton`, `Pastille`, `Chiffre`, `Tableau` |
 | `ui/src/style.css` | Tailwind : couleurs (`@theme`) et leurs valeurs du thème sombre |
 | `tests/` | `cli.rs`, `chemins.rs`, `traitement.rs` ; `interface/parcours.py` (bout en bout) ; `qualification/verifier_v1.py` |
@@ -37,7 +39,7 @@ BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des
 
 ```sh
 npm ci                                            # dépendances interface (versions exactes)
-cargo test --workspace --locked                   # 81 tests Rust
+cargo test --workspace --locked                   # 83 tests Rust
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo fmt --all --check
 npm run build                                     # interface : doit rester sans avertissement
@@ -73,6 +75,8 @@ npm run tauri build                               # release + installateur NSIS 
 
 - **Indexation mutable de `serde_json`** : `valeur["cle"]` sur un `&mut Value` insère `null` si la clé manque. Utiliser `get_mut` (voir `regles::enfants_modifiables`).
 - **Messages du CLI** : ils font partie de la comparaison de qualification ; ne pas en changer l'ordre sans raison.
+- **Données obsolètes** : un classeur modifié sans être relu (`*_a_relire`) laisse le dernier bilan en place ; l'interface doit le présenter comme « à actualiser », jamais comme l'état actuel.
+- **Non calculé ≠ vide** : `etat.propositions` est vide tant que l'analyse n'est pas préparée ; tester `analyse_preparee` avant de conclure à « aucun changement ».
 - **Chemins Windows** : ne pas transmettre la forme canonique `\\?\` à Excel ou à l'Explorateur.
 
 ## Interdits
