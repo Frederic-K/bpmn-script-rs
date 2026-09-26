@@ -428,7 +428,10 @@ impl Traitement {
                 &contenu,
                 Some(&self.manifeste.reference_edition_correspondances.clone()),
             )?;
-            self.manifeste.dernier_bilan = Some(bilan.clone());
+            // Rien ne change : le dernier bilan (décisions, production) reste celui
+            // du traitement. Le remplacer par ce bilan partiel ferait croire à un
+            // retour en arrière.
+            let bilan = self.manifeste.dernier_bilan.get_or_insert(bilan).clone();
             enregistrer_manifeste(&self.dossier, &self.manifeste)?;
             return Ok(bilan);
         }
@@ -481,22 +484,27 @@ impl Traitement {
         bilan.renseigner_analyse(&analyse);
 
         let mut manifeste = self.manifeste.clone();
-        if !self.manifeste.analyse_preparee {
-            manifeste.revision += 1;
-            manifeste.analyse_preparee = true;
-            manifeste.decisions = None;
-            if analyse.is_empty() {
-                // Aucun changement proposé : un ancien classeur de décision n'a plus d'objet.
-                self.archiver_edition(EDITION_DECISIONS)?;
-                manifeste.reference_edition_decisions = None;
-            } else {
-                let classeur = fs::read(dossier_analyse.join("analyse_modifications.xlsx"))?;
-                manifeste.reference_edition_decisions = Some(self.remplacer_edition(
-                    EDITION_DECISIONS,
-                    &classeur,
-                    self.manifeste.reference_edition_decisions.clone().as_ref(),
-                )?);
-            }
+        if self.manifeste.analyse_preparee {
+            // Analyse déjà préparée : le dernier bilan (décisions, production)
+            // reste valable, on ne le remplace pas par ce bilan partiel.
+            let bilan = manifeste.dernier_bilan.get_or_insert(bilan).clone();
+            self.enregistrer(manifeste)?;
+            return Ok(bilan);
+        }
+        manifeste.revision += 1;
+        manifeste.analyse_preparee = true;
+        manifeste.decisions = None;
+        if analyse.is_empty() {
+            // Aucun changement proposé : un ancien classeur de décision n'a plus d'objet.
+            self.archiver_edition(EDITION_DECISIONS)?;
+            manifeste.reference_edition_decisions = None;
+        } else {
+            let classeur = fs::read(dossier_analyse.join("analyse_modifications.xlsx"))?;
+            manifeste.reference_edition_decisions = Some(self.remplacer_edition(
+                EDITION_DECISIONS,
+                &classeur,
+                self.manifeste.reference_edition_decisions.clone().as_ref(),
+            )?);
         }
         manifeste.dernier_bilan = Some(bilan.clone());
         self.enregistrer(manifeste)?;

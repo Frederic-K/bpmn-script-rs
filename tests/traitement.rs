@@ -412,6 +412,39 @@ fn classeur_modifie_apres_lecture_suspend_la_production() {
     assert_eq!(bilan.occurrences_modifiees, 2);
 }
 
+// Revue D02 : relire des correspondances identiques ou redemander l'analyse ne
+// change rien ; le dernier bilan (décisions, puis production) doit rester.
+#[test]
+fn operations_repetees_conservent_le_dernier_bilan() {
+    let espace = Espace::nouveau("repetition");
+    let mut traitement = espace.creer();
+    jusqu_aux_decisions(&mut traitement);
+    let revision = traitement.revision();
+
+    traitement
+        .adopter_correspondances(revision, None, &mut |_| {})
+        .unwrap();
+    traitement.preparer_analyse(revision, &mut |_| {}).unwrap();
+    let etat = traitement.etat().unwrap();
+    let bilan = etat.dernier_bilan.unwrap();
+    assert_eq!(etat.revision, revision);
+    assert_eq!(etat.etape, Etape::DecisionsControlees);
+    assert_eq!(
+        (bilan.statut, bilan.lignes_admises),
+        (Statut::ProductionPossible, 2)
+    );
+
+    traitement.produire(revision, &mut |_| {}).unwrap();
+    let revision = traitement.revision();
+    traitement
+        .adopter_correspondances(revision, None, &mut |_| {})
+        .unwrap();
+    traitement.preparer_analyse(revision, &mut |_| {}).unwrap();
+    let etat = traitement.etat().unwrap();
+    assert_eq!(etat.etape, Etape::ResultatProduit);
+    assert_eq!(etat.dernier_bilan.unwrap().statut, Statut::SgxProduit);
+}
+
 #[test]
 fn nouvelles_correspondances_invalident_analyse_et_decisions() {
     let espace = Espace::nouveau("invalidation");
