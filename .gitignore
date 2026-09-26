@@ -7,3 +7,5 @@ work/
 node_modules/
 dist/
 src-tauri/gen/
+__pycache__/
+*.pyc

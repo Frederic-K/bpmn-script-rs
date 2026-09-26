@@ -82,6 +82,8 @@ pub(crate) struct Controle {
     pub(crate) refusees: usize,
     pub(crate) en_attente: usize,
     pub(crate) propositions_sans_decision: usize,
+    // Même proposition exacte à la fois OUI et NON : bloque toute production.
+    pub(crate) contradictions: Vec<String>,
     // Lignes du rapport controle_validation.xlsx, dans l'ordre des colonnes.
     pub(crate) rapport: Vec<Vec<Value>>,
 }
@@ -300,6 +302,8 @@ fn entier_strict(cellule: &Cellule) -> Result<u64, &'static str> {
 // Compare les décisions relues au dry-run (R07, R08, P02). Seul un OUI dont les
 // cinq champs sont valides et identiques à une proposition est admis. Un OUI
 // non conforme est ignoré avec son motif sans bloquer les autres lignes.
+// Une proposition qui reçoit à la fois OUI et NON est une contradiction : elle
+// bloque la production, sans faire gagner l'une des deux lignes.
 pub(crate) fn controler_decisions(
     analyse: &[Modification],
     lignes: &[LigneLue],
@@ -311,9 +315,13 @@ pub(crate) fn controler_decisions(
         refusees: 0,
         en_attente: 0,
         propositions_sans_decision: 0,
+        contradictions: Vec::new(),
         rapport: Vec::new(),
     };
     let mut propositions_repondues = vec![false; analyse.len()];
+    // Numéro de ligne et proposition de chaque OUI admis et de chaque NON.
+    let mut lignes_oui = Vec::new();
+    let mut lignes_non = Vec::new();
 
     for ligne_lue in lignes {
         let cellules = &ligne_lue.cellules;
@@ -365,13 +373,19 @@ pub(crate) fn controler_decisions(
                 match (premier_champ_invalide, ligne.proposition()) {
                     (Some(motif), _) => ("IGNORÉE", motif),
                     (None, Some(proposition)) if analyse.contains(&proposition) => {
+                        lignes_oui.push((ligne_lue.numero, proposition.clone()));
                         controle.validees.push(proposition);
                         ("VALIDÉE", "Conforme au dry-run".to_string())
                     }
                     _ => ("IGNORÉE", "Ne correspond plus au dry-run".to_string()),
                 }
             }
-            Ok(Some(valeur)) if valeur == "NON" => ("NON VALIDÉE", "Refus humain".to_string()),
+            Ok(Some(valeur)) if valeur == "NON" => {
+                if let Some(proposition) = ligne.proposition() {
+                    lignes_non.push((ligne_lue.numero, proposition));
+                }
+                ("NON VALIDÉE", "Refus humain".to_string())
+            }
             Ok(Some(valeur)) if !valeur.is_empty() => (
                 "EN ATTENTE",
                 format!("Validation « {valeur} » non reconnue : OUI ou NON attendu"),
@@ -406,6 +420,22 @@ pub(crate) fn controler_decisions(
             "EN ATTENTE" => controle.en_attente += 1,
             _ => {}
         }
+    }
+
+    for (ligne_oui, proposition) in &lignes_oui {
+        for (ligne_non, refusee) in &lignes_non {
+            if proposition == refusee {
+                controle.contradictions.push(format!(
+                    "Ligne {ligne_oui} (OUI) et ligne {ligne_non} (NON) : décisions contraires pour « {} » → « {} » ({})",
+                    proposition.nom_actuel,
+                    proposition.nouveau_nom,
+                    proposition.fichier_modele
+                ));
+            }
+        }
+    }
+    for contradiction in &controle.contradictions {
+        journal(&format!("[ERREUR] {contradiction}"));
     }
 
     controle.propositions_sans_decision = propositions_repondues
@@ -1054,5 +1084,46 @@ mod tests {
         let lignes = [decision(2, Cellule::Nombre(2.0), texte("NON"))];
         let controle = controler_decisions(&analyse, &lignes, &mut |_| {});
         assert_eq!(controle.propositions_sans_decision, 1);
+    }
+
+    // OUI et NON sur la même proposition, dans les deux ordres : contradiction
+    // signalée avec ses lignes. OUI répété : pas une contradiction (R09 garde le
+    // doublon, que le recomptage bloque ensuite).
+    #[test]
+    fn decisions_contradictoires_signalees() {
+        let analyse = [modification("m", "A", "Z", 2)];
+        for (premiere, deuxieme) in [("OUI", "NON"), ("NON", "OUI")] {
+            let lignes = [
+                decision(2, Cellule::Nombre(2.0), texte(premiere)),
+                decision(3, Cellule::Nombre(2.0), texte(deuxieme)),
+            ];
+            let controle = controler_decisions(&analyse, &lignes, &mut |_| {});
+            let (ligne_oui, ligne_non) = if premiere == "OUI" { (2, 3) } else { (3, 2) };
+            assert_eq!(
+                controle.contradictions,
+                [format!(
+                    "Ligne {ligne_oui} (OUI) et ligne {ligne_non} (NON) : décisions contraires pour « A » → « Z » (m)"
+                )]
+            );
+        }
+
+        let lignes = [
+            decision(2, Cellule::Nombre(2.0), texte("OUI")),
+            decision(3, Cellule::Nombre(2.0), texte("OUI")),
+        ];
+        let controle = controler_decisions(&analyse, &lignes, &mut |_| {});
+        assert!(controle.contradictions.is_empty());
+        assert_eq!(controle.validees.len(), 2);
+
+        // Un NON sur une autre proposition n'est pas une contradiction.
+        let analyse = [
+            modification("m", "A", "Z", 2),
+            modification("n", "A", "Z", 2),
+        ];
+        let mut autre = decision(3, Cellule::Nombre(2.0), texte("NON"));
+        autre.cellules[5] = texte("n");
+        let lignes = [decision(2, Cellule::Nombre(2.0), texte("OUI")), autre];
+        let controle = controler_decisions(&analyse, &lignes, &mut |_| {});
+        assert!(controle.contradictions.is_empty());
     }
 }

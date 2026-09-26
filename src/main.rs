@@ -32,6 +32,10 @@ fn main() {
             "aucune décision admissible : aucun nouveau SGX n'a été créé".to_string(),
             2,
         ),
+        Statut::ControleBloquant if !bilan.contradictions.is_empty() => (
+            "décisions contradictoires (OUI et NON pour la même proposition) : aucun nouveau SGX n'a été créé".to_string(),
+            2,
+        ),
         Statut::ControleBloquant => (
             "les modifications ne correspondent pas aux occurrences attendues : aucun nouveau SGX n'a été créé".to_string(),
             2,

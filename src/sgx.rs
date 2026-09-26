@@ -13,7 +13,7 @@ use zip::write::FullFileOptions;
 use zip::{ZipArchive, ZipWriter};
 
 use crate::regles::{Modification, Occurrence, trouver_lanes, verifier_modele};
-use crate::{Contexte, Erreur, Journal, Resultat};
+use crate::{Contexte, Erreur, Journal, Resultat, fichiers};
 
 const SUFFIXE_MODELE: &str = "model_1_.json";
 const SUFFIXE_METADONNEES: &str = "model_meta.json";
@@ -214,9 +214,7 @@ pub(crate) fn produire_sgx(
     modeles: &IndexMap<String, Value>,
     validees: &[Modification],
 ) -> Resultat<Vec<String>> {
-    let mut nom_temporaire = destination.file_name().unwrap_or_default().to_os_string();
-    nom_temporaire.push(".en-cours");
-    let temporaire = destination.with_file_name(nom_temporaire);
+    let temporaire = fichiers::nom_temporaire(destination, ".en-cours");
 
     let resultat = ecrire_sgx(source, &temporaire, modeles).and_then(|transformations| {
         let ecarts = verifier_sgx(source, &temporaire, validees)?;
@@ -227,17 +225,22 @@ pub(crate) fn produire_sgx(
             )
             .avec_details(ecarts));
         }
-        if destination.exists() {
-            return Err(Erreur::nouvelle(
-                "sortie_existante",
-                format!("Un fichier existe déjà : {}", destination.display()),
-            ));
+        match fichiers::publier_sans_ecraser(&temporaire, destination) {
+            Ok(()) => Ok(transformations),
+            Err(cause) if cause.kind() == std::io::ErrorKind::AlreadyExists => {
+                Err(Erreur::nouvelle(
+                    "sortie_existante",
+                    format!("Un fichier existe déjà : {}", destination.display()),
+                ))
+            }
+            Err(cause) => Err(Erreur::nouvelle(
+                "ecriture_impossible",
+                format!(
+                    "Le SGX n'a pas pu être créé : {} ({cause})",
+                    destination.display()
+                ),
+            )),
         }
-        fs::rename(&temporaire, destination).contexte(
-            "ecriture_impossible",
-            &format!("Le SGX n'a pas pu être créé : {}", destination.display()),
-        )?;
-        Ok(transformations)
     });
     if resultat.is_err() {
         let _ = fs::remove_file(&temporaire);

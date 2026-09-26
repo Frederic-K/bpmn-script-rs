@@ -307,45 +307,8 @@ async fn enregistrer_copie(
     else {
         return Ok(None);
     };
-    copier_sans_ecraser(&chemin, &destination)?;
+    bpmn_script_rs::copier_sans_ecraser(&chemin, &destination)?;
     Ok(Some(destination))
-}
-
-// La destination est créée exclusivement : un fichier existant n'est jamais
-// remplacé, même si l'utilisateur a confirmé le remplacement dans le dialogue.
-// Cela couvre aussi la copie vers le fichier lui-même, quel que soit le chemin
-// utilisé pour le désigner. Une copie interrompue est supprimée.
-fn copier_sans_ecraser(source: &Path, destination: &Path) -> Reponse<()> {
-    let echec = |cause: std::io::Error| {
-        erreur(
-            "copie_impossible",
-            format!(
-                "La copie n'a pas pu être enregistrée : {} ({cause})",
-                destination.display()
-            ),
-        )
-    };
-    let mut lecture = std::fs::File::open(source).map_err(echec)?;
-    let mut copie = match std::fs::File::create_new(destination) {
-        Ok(copie) => copie,
-        Err(cause) if cause.kind() == std::io::ErrorKind::AlreadyExists => {
-            return Err(erreur(
-                "copie_impossible",
-                format!(
-                    "Un fichier existe déjà à cet emplacement : {}. Choisissez un autre nom ; aucun fichier n'est remplacé.",
-                    destination.display()
-                ),
-            ));
-        }
-        Err(cause) => return Err(echec(cause)),
-    };
-    let resultat = std::io::copy(&mut lecture, &mut copie).and_then(|_| copie.sync_all());
-    drop(copie);
-    if let Err(cause) = resultat {
-        let _ = std::fs::remove_file(destination);
-        return Err(echec(cause));
-    }
-    Ok(())
 }
 
 pub fn lancer() {
@@ -397,44 +360,6 @@ mod tests {
         let refus =
             verifier_appartenance(&traitement, &traitement.join("absent.xlsx")).unwrap_err();
         assert_eq!(refus.code, "fichier_absent");
-        std::fs::remove_dir_all(&racine).unwrap();
-    }
-
-    // Revue D01 : la copie ne remplace jamais un fichier, y compris la source
-    // désignée par un autre chemin.
-    #[test]
-    fn copie_sans_ecrasement() {
-        let racine = std::env::temp_dir().join(format!("bpmn-copie-{}", std::process::id()));
-        std::fs::create_dir_all(racine.join("sorties")).unwrap();
-        let source = racine.join("sorties/export_modifie.sgx");
-        let existant = racine.join("existant.sgx");
-        std::fs::write(&source, b"sgx produit").unwrap();
-        std::fs::write(&existant, b"autre contenu").unwrap();
-
-        let refus = copier_sans_ecraser(&source, &existant).unwrap_err();
-        assert_eq!(refus.code, "copie_impossible");
-        assert_eq!(std::fs::read(&existant).unwrap(), b"autre contenu");
-
-        for alias in [
-            source.clone(),
-            racine.join("sorties/./export_modifie.sgx"),
-            racine.join("sorties/../sorties/export_modifie.sgx"),
-        ] {
-            assert_eq!(
-                copier_sans_ecraser(&source, &alias).unwrap_err().code,
-                "copie_impossible"
-            );
-            assert_eq!(std::fs::read(&source).unwrap(), b"sgx produit");
-        }
-
-        let copie = racine.join("copie.sgx");
-        copier_sans_ecraser(&source, &copie).unwrap();
-        assert_eq!(std::fs::read(&copie).unwrap(), b"sgx produit");
-
-        // Dossier de destination absent : erreur, et aucun fichier laissé.
-        let impossible = racine.join("absent/copie.sgx");
-        assert!(copier_sans_ecraser(&source, &impossible).is_err());
-        assert!(!impossible.exists());
         std::fs::remove_dir_all(&racine).unwrap();
     }
 }

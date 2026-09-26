@@ -148,11 +148,14 @@ pub struct Etat {
     // Classeur modifié depuis sa génération ou sa dernière lecture : à relire.
     pub correspondances_a_relire: bool,
     pub correspondances_adoptees: bool,
+    // Classeur effectivement lu lors de la dernière adoption.
+    pub correspondances_lues: Option<Lecture>,
     pub analyse_preparee: bool,
     pub fichier_analyse: Option<PathBuf>,
     pub edition_decisions: Option<PathBuf>,
     pub decisions_a_relire: bool,
     pub decisions_adoptees: bool,
+    pub decisions_lues: Option<Lecture>,
     pub fichier_controle: Option<PathBuf>,
     pub tentatives: Vec<EtatTentative>,
     // Dossiers de sortie sans enregistrement dans le manifeste (arrêt pendant une production).
@@ -160,6 +163,17 @@ pub struct Etat {
     // Propositions de l'analyse préparée (aperçu en lecture seule).
     pub propositions: Vec<Modification>,
     pub dernier_bilan: Option<Bilan>,
+}
+
+// Provenance d'un classeur adopté : c'est son instantané, pris à la lecture,
+// qui est utilisé ; une modification ultérieure du fichier lu n'a aucun effet.
+#[derive(Serialize, Debug, Clone)]
+pub struct Lecture {
+    pub fichier: String,
+    pub horodatage: u64,
+    // Vrai si le fichier lu est le classeur d'édition du traitement, faux pour
+    // un classeur importé d'ailleurs.
+    pub classeur_du_traitement: bool,
 }
 
 // ---------------------------------------------------------------- Traitement
@@ -366,6 +380,7 @@ impl Traitement {
                 Some(&manifeste.reference_edition_correspondances),
             ),
             correspondances_adoptees: manifeste.correspondances.is_some(),
+            correspondances_lues: self.lecture(&manifeste.correspondances, EDITION_CORRESPONDANCES),
             analyse_preparee: manifeste.analyse_preparee,
             fichier_analyse: manifeste.analyse_preparee.then(|| {
                 self.dossier
@@ -378,6 +393,7 @@ impl Traitement {
                 manifeste.reference_edition_decisions.as_ref(),
             ),
             decisions_adoptees: manifeste.decisions.is_some(),
+            decisions_lues: self.lecture(&manifeste.decisions, EDITION_DECISIONS),
             fichier_controle: manifeste.decisions.is_some().then(|| {
                 self.dossier
                     .join(DOSSIER_CONTROLE)
@@ -815,6 +831,15 @@ impl Traitement {
             ),
         )?;
         Ok((contenu, chemin.display().to_string()))
+    }
+
+    fn lecture(&self, adoption: &Option<Adoption>, edition: &str) -> Option<Lecture> {
+        adoption.as_ref().map(|adoption| Lecture {
+            fichier: adoption.fichier_lu.clone(),
+            horodatage: adoption.horodatage,
+            // Comparaison sur la fin du chemin : le dossier du traitement a pu être déplacé.
+            classeur_du_traitement: Path::new(&adoption.fichier_lu).ends_with(edition),
+        })
     }
 
     // Vrai si le classeur d'édition diffère de sa version de référence.

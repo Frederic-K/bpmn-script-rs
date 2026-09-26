@@ -46,7 +46,7 @@ pub enum Statut {
     DecisionsAttendues,
     // Décisions contrôlées, aucune n'est admissible : aucun SGX.
     AucuneDecisionAdmissible,
-    // Le recomptage en mémoire diverge : aucun SGX.
+    // Décisions contradictoires ou recomptage en mémoire divergent : aucun SGX.
     ControleBloquant,
     // Décisions contrôlées et conformes : la génération est possible.
     ProductionPossible,
@@ -76,6 +76,11 @@ pub struct Bilan {
     pub occurrences_admises: u64,
     // Lignes de décision non admises (refus, attente, OUI ignoré), avec leur motif.
     pub lignes_a_examiner: Vec<LigneExaminee>,
+    // Propositions ayant reçu OUI et NON : bloquant. `default` : absent des
+    // manifestes écrits avant cette règle.
+    #[serde(default)]
+    pub contradictions: Vec<String>,
+    // Écarts du recomptage en mémoire : bloquant.
     pub divergences: Vec<String>,
     pub modeles_modifies: usize,
     pub occurrences_modifiees: u64,
@@ -155,10 +160,11 @@ impl Bilan {
                 motif: valeur_affichee(&ligne[8]),
             })
             .collect();
+        self.contradictions = controle.contradictions.clone();
         self.divergences = divergences;
         self.statut = if controle.validees.is_empty() {
             Statut::AucuneDecisionAdmissible
-        } else if !self.divergences.is_empty() {
+        } else if !self.contradictions.is_empty() || !self.divergences.is_empty() {
             Statut::ControleBloquant
         } else {
             Statut::ProductionPossible

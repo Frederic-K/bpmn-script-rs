@@ -1049,6 +1049,25 @@ fn doublon_de_validation_bloque_la_production() {
     );
 }
 
+// Évolution V1 après la revue du parcours : OUI et NON sur la même proposition
+// bloquent la production (auparavant, le OUI était appliqué).
+#[test]
+fn decisions_contradictoires_bloquent_la_production() {
+    let espace = Espace::standard("contradiction");
+    correspondance_a_z(&espace);
+    espace.validation(&[ligne_a(Texte("NON")), ligne_a(Texte("OUI"))]);
+    let sortie = espace.lancer();
+    assert_eq!(sortie.status.code(), Some(2));
+    assert!(stdout(&sortie).contains(&format!(
+        "[ERREUR] Ligne 3 (OUI) et ligne 2 (NON) : décisions contraires pour « A » → « Z » ({MODELE_A})"
+    )));
+    assert_eq!(
+        derniere_ligne(&sortie),
+        "[RÉSULTAT] décisions contradictoires (OUI et NON pour la même proposition) : aucun nouveau SGX n'a été créé"
+    );
+    assert!(!espace.chemin(SORTIE_SGX).exists());
+}
+
 #[test]
 fn permutation_bloque_la_production() {
     let espace = Espace::standard("permutation");

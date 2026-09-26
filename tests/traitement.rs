@@ -747,3 +747,133 @@ fn etat_complet_pour_l_interface_apres_reprise() {
     );
     assert_eq!(ligne.fichier_modele, MODELE_B);
 }
+
+// ---------------------------------------------------------------- Revue du parcours
+
+fn jusqu_a_l_analyse(traitement: &mut Traitement) {
+    correspondances(
+        &traitement.etat().unwrap().edition_correspondances,
+        &[("A", "Z")],
+    );
+    traitement
+        .adopter_correspondances(traitement.revision(), None, &mut |_| {})
+        .unwrap();
+    traitement
+        .preparer_analyse(traitement.revision(), &mut |_| {})
+        .unwrap();
+}
+
+// OUI et NON sur la même proposition : contrôle bloquant, aucune production,
+// les deux lignes sont citées.
+#[test]
+fn decisions_contradictoires_bloquent_la_production() {
+    let espace = Espace::nouveau("contradiction");
+    let mut traitement = espace.creer();
+    jusqu_a_l_analyse(&mut traitement);
+    let retour = espace.0.join("contradictoire.xlsx");
+    decisions(
+        &retour,
+        &[
+            (MODELE_A, "A", "Z", 2, "OUI"),
+            (MODELE_A, "A", "Z", 2, "NON"),
+        ],
+    );
+    let bilan = traitement
+        .adopter_decisions(traitement.revision(), Some(&retour), &mut |_| {})
+        .unwrap();
+    assert_eq!(bilan.statut, Statut::ControleBloquant);
+    assert_eq!(bilan.contradictions.len(), 1);
+    assert!(bilan.contradictions[0].starts_with("Ligne 2 (OUI) et ligne 3 (NON)"));
+
+    let bilan = traitement
+        .produire(traitement.revision(), &mut |_| {})
+        .unwrap();
+    assert_eq!(bilan.statut, Statut::ControleBloquant);
+    assert!(bilan.sgx_produit.is_none());
+}
+
+// Contrat : c'est l'instantané pris à l'import qui compte. Modifier ensuite le
+// fichier importé n'a aucun effet ; l'état indique quel fichier a été lu.
+#[test]
+fn retour_importe_puis_modifie_sans_effet() {
+    let espace = Espace::nouveau("retour-modifie");
+    let mut traitement = espace.creer();
+    jusqu_a_l_analyse(&mut traitement);
+    let retour = espace.0.join("retour.xlsx");
+    decisions_a_z(&retour, "OUI", "OUI");
+    traitement
+        .adopter_decisions(traitement.revision(), Some(&retour), &mut |_| {})
+        .unwrap();
+    let lues = traitement.etat().unwrap().decisions_lues.unwrap();
+    assert_eq!(lues.fichier, retour.display().to_string());
+    assert!(!lues.classeur_du_traitement);
+
+    decisions_a_z(&retour, "NON", "NON");
+    assert!(!traitement.etat().unwrap().decisions_a_relire);
+    let bilan = traitement
+        .produire(traitement.revision(), &mut |_| {})
+        .unwrap();
+    assert_eq!(bilan.occurrences_modifiees, 3);
+
+    // L'import est devenu le classeur de décision du traitement.
+    let edition = traitement.etat().unwrap().edition_decisions.unwrap();
+    traitement
+        .adopter_decisions(traitement.revision(), None, &mut |_| {})
+        .unwrap();
+    let lues = traitement.etat().unwrap().decisions_lues.unwrap();
+    assert_eq!(lues.fichier, edition.display().to_string());
+    assert!(lues.classeur_du_traitement);
+}
+
+// Contrat : un second retour remplace le premier, sans fusion.
+#[test]
+fn second_retour_remplace_le_premier() {
+    let espace = Espace::nouveau("retours-successifs");
+    let mut traitement = espace.creer();
+    jusqu_a_l_analyse(&mut traitement);
+    let premier = espace.0.join("retour-a.xlsx");
+    let second = espace.0.join("retour-b.xlsx");
+    decisions(&premier, &[(MODELE_A, "A", "Z", 2, "OUI")]);
+    decisions(&second, &[(MODELE_B, "A", "Z", 1, "OUI")]);
+    traitement
+        .adopter_decisions(traitement.revision(), Some(&premier), &mut |_| {})
+        .unwrap();
+    let bilan = traitement
+        .adopter_decisions(traitement.revision(), Some(&second), &mut |_| {})
+        .unwrap();
+    assert_eq!(
+        (bilan.lignes_admises, bilan.propositions_sans_decision),
+        (1, 1)
+    );
+    let sgx = traitement
+        .produire(traitement.revision(), &mut |_| {})
+        .unwrap()
+        .sgx_produit
+        .unwrap();
+    assert_eq!(lanes_du_sgx(&sgx, MODELE_A), ["A", "A", "B"]);
+    assert_eq!(lanes_du_sgx(&sgx, MODELE_B), ["Z"]);
+}
+
+// Contrat : un import refusé ne change rien ; les décisions lues avant restent
+// celles du traitement, et leur provenance reste affichable.
+#[test]
+fn import_refuse_conserve_les_decisions_lues() {
+    let espace = Espace::nouveau("import-refuse");
+    let mut traitement = espace.creer();
+    jusqu_aux_decisions(&mut traitement);
+    let revision = traitement.revision();
+    let avant = traitement.etat().unwrap().decisions_lues.unwrap();
+    let mauvais = espace.0.join("mauvais-retour.xlsx");
+    correspondances(&mauvais, &[("A", "Z")]);
+    let erreur = traitement
+        .adopter_decisions(revision, Some(&mauvais), &mut |_| {})
+        .unwrap_err();
+    assert_eq!(erreur.code, "classeur_format");
+    let etat = traitement.etat().unwrap();
+    assert_eq!(etat.revision, revision);
+    assert_eq!(etat.decisions_lues.unwrap().fichier, avant.fichier);
+    assert_eq!(
+        etat.dernier_bilan.unwrap().statut,
+        Statut::ProductionPossible
+    );
+}

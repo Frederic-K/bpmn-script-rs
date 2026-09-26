@@ -4,6 +4,7 @@
 // humaine -> SGX modifié. Point d'entrée historique : workflow::executer.
 
 mod excel;
+mod fichiers;
 mod regles;
 mod sgx;
 pub mod traitement;
@@ -11,8 +12,9 @@ pub mod workflow;
 
 use std::fmt;
 
+pub use fichiers::copier_sans_ecraser;
 pub use regles::Modification;
-pub use traitement::{Etape, Etat, EtatFichier, EtatTentative, Traitement};
+pub use traitement::{Etape, Etat, EtatFichier, EtatTentative, Lecture, Traitement};
 pub use workflow::{Bilan, Chemins, LigneExaminee, Statut, executer};
 
 // Erreur bloquante : code stable (pour l'interface), message lisible et
