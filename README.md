@@ -88,13 +88,20 @@ Point restant à vérifier : l'import dans Signavio d'un SGX produit par la vers
 | Point | Python V0.1 | Rust |
 | --- | --- | --- |
 | Dossier `output/` absent | Erreur | Créé automatiquement |
+| Analyse sans impact | Erreur (plage Excel vide) | Analyse vide, résultat explicite |
 | Erreur bloquante | Trace Python | Message `[ERREUR] ...` et code retour 1 |
 | Entrées SGX non modifiées | Recompressées | Données compressées d'origine recopiées sans recompression |
-| En-têtes ZIP | Système « DOS » conservé | Système « Unix », droits de lecture standard (0644) |
-| JSON des modèles modifiés | Séparateurs `, ` et `: ` | Format compact (contenu identique) |
-| Cellule numérique dans une colonne texte | Lue comme nombre | Lue comme texte |
+| En-têtes ZIP | Système « DOS » conservé | Système de la plateforme de compilation ; commentaires, champs supplémentaires et date conservés sur les entrées réécrites, commentaire d'archive conservé |
+| JSON des modèles modifiés | Séparateurs `, ` et `: ` | Format compact, nombres recopiés à l'identique (contenu identique) |
 
-Ces écarts ne modifient ni les décisions humaines, ni les contrôles, ni le contenu des modèles.
+## Contrat V1 (lot M3)
+
+Détail et justification : [docs/m3-contrats-v1.md](docs/m3-contrats-v1.md).
+
+- **Modèles** : un JSON illisible, des métadonnées absentes, un nom de lane ou un `childShapes` mal typé bloquent le traitement avec la liste des anomalies. Aucun inventaire partiel.
+- **Excel** : feuille et en-têtes contrôlés ; noms et chemins en texte, occurrences en nombre entier ; formules refusées. Une erreur dans les correspondances refuse le classeur ; une erreur sur une ligne OUI ignore cette ligne seulement.
+- **Production** : le SGX est écrit dans un fichier temporaire, relu et comparé à la source (seules les lanes validées peuvent différer), puis publié sans jamais écraser un fichier existant (`_modifie_2.sgx`...).
+- **Résultat** : dernière ligne `[RÉSULTAT] ...` ; code de sortie 0 (étape terminée), 1 (erreur bloquante), 2 (décisions fournies mais aucun SGX produit).
 
 ## Hors périmètre
 
