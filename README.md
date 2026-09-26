@@ -16,7 +16,8 @@ Objectif : comparer une réécriture Rust simple (KISS, YAGNI) avec le script Py
 | `src/excel.rs` | Lecture des Excel de saisie, écriture des Excel produits |
 | `tests/` | Tests d'intégration (`cargo test`) |
 | `Cargo.toml` | Dépendances |
-| `rust-toolchain.toml` | Version de Rust (1.88.0) |
+| `src/traitement.rs` | Dossier de traitement : copie source, instantanés, manifeste, reprise, tentatives |
+| `rust-toolchain.toml` | Version de Rust (1.89.0) |
 
 Dépendances, une par besoin :
 

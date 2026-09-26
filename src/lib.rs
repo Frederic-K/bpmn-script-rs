@@ -6,10 +6,12 @@
 mod excel;
 mod regles;
 mod sgx;
+pub mod traitement;
 pub mod workflow;
 
 use std::fmt;
 
+pub use traitement::{Etape, Etat, EtatFichier, EtatTentative, Traitement};
 pub use workflow::{Bilan, Chemins, Statut, executer};
 
 // Erreur bloquante : code stable (pour l'interface), message lisible et

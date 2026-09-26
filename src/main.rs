@@ -36,6 +36,8 @@ fn main() {
             "les modifications ne correspondent pas aux occurrences attendues : aucun nouveau SGX n'a été créé".to_string(),
             2,
         ),
+        // Étape intermédiaire du dossier de traitement, jamais retournée par ce mode.
+        Statut::ProductionPossible => ("décisions conformes".to_string(), 0),
         Statut::SgxProduit => (
             format!(
                 "SGX produit et vérifié : {} ({} modèle(s), {} occurrence(s))",
