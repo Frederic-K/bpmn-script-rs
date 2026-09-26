@@ -91,7 +91,7 @@ Documenté pour l'opérateur et le propriétaire : [docs/guide.md](docs/guide.md
 | Clippy (`-D warnings`), rustfmt, `npm run build` | Propres, sans avertissement |
 | Qualification V1 (30 scénarios comparés au Python d'origine) | Conforme sous Linux (rejouée après la règle des contradictions) et avec le binaire Windows (`tests/qualification/verifier_v1.py`) |
 | Test de bout en bout de la vraie application (Linux, WebKitGTK) | 32 contrôles réussis, dont : double clic sur « Générer » (une seule tentative), classeur modifié qui suspend la génération, D02, D03, D04, D08, contradiction bloquante, import refusé, provenance des décisions, analyse à actualiser |
-| Windows (GitHub Actions) | Tests, installateur, qualification et lancement réussis sur `abe5311` : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36264584759 ; à reconsulter pour la branche `claude/revue-parcours` |
+| Windows (GitHub Actions) | 90 tests (dont la publication par lien physique), installateur, qualification et lancement réussis sur `2a18534` : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36268807829 |
 | Mutations volontaires du code (M1) | 5 sur 5 détectées par les tests |
 
 **Non vérifié :**
