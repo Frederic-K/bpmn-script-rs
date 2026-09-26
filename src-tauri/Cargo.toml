@@ -1,0 +1,18 @@
+[package]
+name = "bpmn-script-app"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "bpmn_script_app"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+bpmn-script-rs = { path = ".." }
+serde = { version = "1.0.229", features = ["derive"] }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"

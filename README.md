@@ -8,37 +8,44 @@ Objectif : comparer une réécriture Rust simple (KISS, YAGNI) avec le script Py
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/main.rs` | CLI historique : lance le workflow sur `input/`, `work/`, `output/` du dossier courant |
-| `src/lib.rs` | Bibliothèque : point d'entrée `executer(&Chemins, journal)` avec dossiers explicites |
-| `src/workflow.rs` | Enchaînement des étapes, écriture des JSON |
-| `src/regles.rs` | Règles métier en mémoire (inventaire, synthèse, dry-run, contrôle, test des renommages) |
-| `src/sgx.rs` | Lecture et écriture de l'archive SGX |
-| `src/excel.rs` | Lecture des Excel de saisie, écriture des Excel produits |
-| `tests/` | Tests d'intégration (`cargo test`) |
-| `Cargo.toml` | Dépendances |
+| `src/` | Moteur (bibliothèque Rust) et CLI historique |
+| `src/lib.rs` | Points d'entrée : `Traitement` (application) et `executer` (CLI) |
 | `src/traitement.rs` | Dossier de traitement : copie source, instantanés, manifeste, reprise, tentatives |
+| `src/workflow.rs` | Étapes communes, bilan, mode historique `input/`, `work/`, `output/` |
+| `src/regles.rs` | Règles métier en mémoire (inventaire, dry-run, contrôle, recomptage, vérification) |
+| `src/sgx.rs` | Lecture, écriture vérifiée et publication de l'archive SGX |
+| `src/excel.rs` | Lecture stricte des Excel de saisie, écriture des Excel produits |
+| `src/main.rs` | CLI historique |
+| `src-tauri/` | Application Windows : commandes Tauri appelant le moteur |
+| `ui/` | Interface Svelte 5 (JavaScript) : `App.svelte`, `moteur.js`, `composants/` |
+| `tests/` | Tests Rust (`cargo test`) et test de bout en bout de l'interface (`tests/interface/`) |
 | `rust-toolchain.toml` | Version de Rust (1.89.0) |
+| `package.json` | Versions exactes de Svelte, Vite et Tauri (verrouillées par `package-lock.json`) |
 
-Dépendances, une par besoin :
+Dépendances du moteur, une par besoin :
 
 | Crate | Besoin |
 | --- | --- |
 | `zip` | Lire et écrire l'archive SGX |
-| `serde`, `serde_json` | Lire et écrire les JSON (ordre des clés conservé) |
+| `serde`, `serde_json` | Lire et écrire les JSON (ordre des clés et nombres conservés) |
 | `indexmap` | Dictionnaires ordonnés, comme les `dict` Python |
-| `calamine` | Lire les Excel de `work/` |
-| `rust_xlsxwriter` | Écrire les Excel de `output/` |
+| `calamine` | Lire les Excel de saisie |
+| `rust_xlsxwriter` | Écrire les Excel produits |
+| `sha2` | Empreintes des fichiers du traitement |
+
+Application : `tauri`, `tauri-plugin-dialog` (choix de fichiers), `tauri-plugin-opener` (ouvrir un classeur, afficher un fichier dans l'Explorateur). Interface : `svelte`, `vite`, `@tauri-apps/api`.
 
 ## Compilation
 
-Prérequis : Rust installé (`rustup`).
+Prérequis : Rust (`rustup`, la version est fixée par `rust-toolchain.toml`), Node.js 22 et npm. Sous Windows, WebView2 (présent sur Windows 10/11 à jour).
 
 ```powershell
-cargo build --release
-cargo test
+npm ci                    # dépendances de l'interface, versions verrouillées
+npm run tauri dev         # application en développement
+npm run tauri build       # installateur Windows dans target\release\bundle\nsis\
+cargo test --workspace    # tests du moteur et de l'application
+cargo build --release -p bpmn-script-rs   # CLI historique seul : target\release\bpmn-script-rs.exe
 ```
-
-Binaire produit : `target\release\bpmn-script-rs.exe`.
 
 ## Utilisation
 

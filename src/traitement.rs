@@ -24,6 +24,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::regles::Modification;
 use crate::workflow::{self, Bilan, Inventaire, Statut};
 use crate::{Contexte, Erreur, Journal, Resultat};
 
@@ -92,6 +93,9 @@ struct Manifeste {
     analyse_preparee: bool,
     decisions: Option<Adoption>,
     tentatives: Vec<Tentative>,
+    // Bilan de la dernière opération réussie, pour l'affichage après une reprise.
+    #[serde(default)]
+    dernier_bilan: Option<Bilan>,
 }
 
 // ---------------------------------------------------------------- État publié
@@ -153,6 +157,9 @@ pub struct Etat {
     pub tentatives: Vec<EtatTentative>,
     // Dossiers de sortie sans enregistrement dans le manifeste (arrêt pendant une production).
     pub tentatives_interrompues: Vec<PathBuf>,
+    // Propositions de l'analyse préparée (aperçu en lecture seule).
+    pub propositions: Vec<Modification>,
+    pub dernier_bilan: Option<Bilan>,
 }
 
 // ---------------------------------------------------------------- Traitement
@@ -241,6 +248,7 @@ impl Traitement {
             analyse_preparee: false,
             decisions: None,
             tentatives: Vec::new(),
+            dernier_bilan: Some(bilan.clone()),
         };
         enregistrer_manifeste(dossier, &manifeste)?;
         Ok((
@@ -377,6 +385,8 @@ impl Traitement {
             }),
             tentatives,
             tentatives_interrompues: self.tentatives_interrompues(),
+            propositions: self.propositions()?,
+            dernier_bilan: manifeste.dernier_bilan.clone(),
         })
     }
 
@@ -418,6 +428,7 @@ impl Traitement {
                 &contenu,
                 Some(&self.manifeste.reference_edition_correspondances.clone()),
             )?;
+            self.manifeste.dernier_bilan = Some(bilan.clone());
             enregistrer_manifeste(&self.dossier, &self.manifeste)?;
             return Ok(bilan);
         }
@@ -443,6 +454,7 @@ impl Traitement {
         });
         manifeste.analyse_preparee = false;
         manifeste.decisions = None;
+        manifeste.dernier_bilan = Some(bilan.clone());
         self.enregistrer(manifeste)?;
         journal("[OK] Correspondances adoptées : analyse et décisions précédentes à refaire");
         Ok(bilan)
@@ -486,6 +498,7 @@ impl Traitement {
                 )?);
             }
         }
+        manifeste.dernier_bilan = Some(bilan.clone());
         self.enregistrer(manifeste)?;
         Ok(bilan)
     }
@@ -556,6 +569,7 @@ impl Traitement {
             fichier_lu,
             horodatage: maintenant(),
         });
+        manifeste.dernier_bilan = Some(bilan.clone());
         self.enregistrer(manifeste)?;
         Ok(bilan)
     }
@@ -651,6 +665,7 @@ impl Traitement {
             modeles_modifies: bilan.modeles_modifies,
             occurrences_modifiees: bilan.occurrences_modifiees,
         });
+        manifeste.dernier_bilan = Some(bilan.clone());
         if let Err(erreur) = self.enregistrer(manifeste) {
             return Err(Erreur::nouvelle(
                 "etat_non_confirme",
@@ -665,6 +680,19 @@ impl Traitement {
     }
 
     // ------------------------------------------------------------ Interne
+
+    fn propositions(&self) -> Resultat<Vec<Modification>> {
+        if !self.manifeste.analyse_preparee {
+            return Ok(Vec::new());
+        }
+        let chemin = self
+            .dossier
+            .join(DOSSIER_ANALYSE)
+            .join("analyse_modifications.json");
+        let illisible = format!("Analyse illisible : {}", chemin.display());
+        let texte = fs::read_to_string(&chemin).contexte("traitement_illisible", &illisible)?;
+        serde_json::from_str(&texte).contexte("traitement_illisible", &illisible)
+    }
 
     fn verifier_revision(&self, revision_attendue: u64) -> Resultat<()> {
         if revision_attendue != self.manifeste.revision {

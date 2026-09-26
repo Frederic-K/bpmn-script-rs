@@ -666,3 +666,51 @@ fn deux_traitements_de_la_meme_source_dans_des_dossiers_distincts() {
         espace.parent().join("export - traitement (2)")
     );
 }
+
+// ---------------------------------------------------------------- Interface
+
+#[test]
+fn etat_complet_pour_l_interface_apres_reprise() {
+    let espace = Espace::nouveau("interface");
+    let dossier = {
+        let mut traitement = espace.creer();
+        correspondances(
+            &traitement.etat().unwrap().edition_correspondances,
+            &[("A", "Z"), ("X", "Y")],
+        );
+        traitement
+            .adopter_correspondances(1, None, &mut |_| {})
+            .unwrap();
+        traitement.preparer_analyse(2, &mut |_| {}).unwrap();
+        let edition = traitement.etat().unwrap().edition_decisions.unwrap();
+        decisions(
+            &edition,
+            &[
+                (MODELE_A, "A", "Z", 2, "OUI"),
+                (MODELE_B, "A", "Z", 1, "peut-être"),
+            ],
+        );
+        traitement.adopter_decisions(3, None, &mut |_| {}).unwrap();
+        traitement.dossier().to_path_buf()
+    };
+
+    let etat = Traitement::ouvrir(&dossier).unwrap().etat().unwrap();
+    let propositions: Vec<_> = etat
+        .propositions
+        .iter()
+        .map(|proposition| (proposition.fichier_modele.as_str(), proposition.occurrences))
+        .collect();
+    assert_eq!(propositions, [(MODELE_A, 2), (MODELE_B, 1)]);
+    let bilan = etat.dernier_bilan.unwrap();
+    assert_eq!(bilan.statut, Statut::ProductionPossible);
+    assert_eq!(bilan.noms_inconnus, ["X"]);
+    assert_eq!((bilan.lignes_admises, bilan.lignes_en_attente), (1, 1));
+    assert_eq!(bilan.lignes_a_examiner.len(), 1);
+    let ligne = &bilan.lignes_a_examiner[0];
+    assert_eq!((ligne.ligne, ligne.resultat.as_str()), (3, "EN ATTENTE"));
+    assert_eq!(
+        ligne.motif,
+        "Validation « PEUT-ÊTRE » non reconnue : OUI ou NON attendu"
+    );
+    assert_eq!(ligne.fichier_modele, MODELE_B);
+}

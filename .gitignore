@@ -3,3 +3,7 @@
 input/
 output/
 work/
+
+node_modules/
+dist/
+src-tauri/gen/

@@ -3,7 +3,7 @@
 // résultat. Aucun accès fichier.
 
 use indexmap::IndexMap;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::Journal;
@@ -31,13 +31,13 @@ pub(crate) struct ParModele {
 }
 
 // Une proposition du dry-run (toutes les valeurs sont connues).
-#[derive(Serialize, Clone, PartialEq, Debug)]
-pub(crate) struct Modification {
-    pub(crate) fichier_modele: String,
-    pub(crate) flux: String,
-    pub(crate) nom_actuel: String,
-    pub(crate) nouveau_nom: String,
-    pub(crate) occurrences: u64,
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct Modification {
+    pub fichier_modele: String,
+    pub flux: String,
+    pub nom_actuel: String,
+    pub nouveau_nom: String,
+    pub occurrences: u64,
 }
 
 // Une ligne de décision relue. Un champ absent ou de type incorrect vaut None.

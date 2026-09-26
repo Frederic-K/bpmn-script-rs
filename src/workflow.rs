@@ -74,12 +74,24 @@ pub struct Bilan {
     pub lignes_en_attente: usize,
     pub propositions_sans_decision: usize,
     pub occurrences_admises: u64,
+    // Lignes de décision non admises (refus, attente, OUI ignoré), avec leur motif.
+    pub lignes_a_examiner: Vec<LigneExaminee>,
     pub divergences: Vec<String>,
     pub modeles_modifies: usize,
     pub occurrences_modifiees: u64,
     // Attributs ZIP qui n'ont pas pu être conservés sur les entrées réécrites.
     pub transformations: Vec<String>,
     pub sgx_produit: Option<PathBuf>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct LigneExaminee {
+    pub ligne: u64,
+    pub nom_actuel: String,
+    pub nouveau_nom: String,
+    pub fichier_modele: String,
+    pub resultat: String,
+    pub motif: String,
 }
 
 pub(crate) struct Inventaire {
@@ -129,6 +141,20 @@ impl Bilan {
             .iter()
             .map(|modification| modification.occurrences)
             .sum();
+        // Colonnes du rapport : 0 ligne, 2 nom actuel, 3 nouveau nom saisi, 7 résultat, 8 motif, 9 fichier.
+        self.lignes_a_examiner = controle
+            .rapport
+            .iter()
+            .filter(|ligne| ligne[7] != "VALIDÉE")
+            .map(|ligne| LigneExaminee {
+                ligne: ligne[0].as_u64().unwrap_or_default(),
+                nom_actuel: valeur_affichee(&ligne[2]),
+                nouveau_nom: valeur_affichee(&ligne[3]),
+                fichier_modele: valeur_affichee(&ligne[9]),
+                resultat: valeur_affichee(&ligne[7]),
+                motif: valeur_affichee(&ligne[8]),
+            })
+            .collect();
         self.divergences = divergences;
         self.statut = if controle.validees.is_empty() {
             Statut::AucuneDecisionAdmissible
@@ -137,6 +163,14 @@ impl Bilan {
         } else {
             Statut::ProductionPossible
         };
+    }
+}
+
+fn valeur_affichee(valeur: &Value) -> String {
+    match valeur {
+        Value::Null => String::new(),
+        Value::String(texte) => texte.clone(),
+        autre => autre.to_string(),
     }
 }
 

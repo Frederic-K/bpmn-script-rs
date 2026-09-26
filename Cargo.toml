@@ -11,3 +11,6 @@ sha2 = "0.10.9"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.151", features = ["preserve_order", "float_roundtrip", "arbitrary_precision"] }
 zip = { version = "8.6.0", default-features = false, features = ["deflate", "unreserved"] }
+
+[workspace]
+members = ["src-tauri"]

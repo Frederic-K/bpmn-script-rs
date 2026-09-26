@@ -11,8 +11,9 @@ pub mod workflow;
 
 use std::fmt;
 
+pub use regles::Modification;
 pub use traitement::{Etape, Etat, EtatFichier, EtatTentative, Traitement};
-pub use workflow::{Bilan, Chemins, Statut, executer};
+pub use workflow::{Bilan, Chemins, LigneExaminee, Statut, executer};
 
 // Erreur bloquante : code stable (pour l'interface), message lisible et
 // détails éventuels (une ligne par cellule ou par modèle en anomalie).
