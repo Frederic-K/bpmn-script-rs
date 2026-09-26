@@ -36,7 +36,7 @@
 <h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">{texte.titre}</h1>
 <p class="max-w-[72ch] text-encre-2">{texte.introduction}</p>
 
-<div class="grid max-w-[860px] grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
+<div class="grid max-w-215 grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
   <section class="grid content-start gap-3 rounded-lg border border-trait p-4.5" aria-labelledby="titre-nouveau">
     <h2 id="titre-nouveau" class="text-base font-semibold">{texte.nouveauTitre}</h2>
     <p class="text-xs text-encre-2">{texte.nouveauExplication}</p>
