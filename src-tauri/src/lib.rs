@@ -239,15 +239,18 @@ fn verifier_appartenance(dossier: &Path, chemin: &Path) -> Reponse<PathBuf> {
             format!("Fichier introuvable : {}", chemin.display()),
         )
     };
-    let dossier = dossier.canonicalize().map_err(|_| introuvable())?;
-    let chemin = chemin.canonicalize().map_err(|_| introuvable())?;
-    if !chemin.starts_with(&dossier) {
+    // Comparaison sur les chemins canoniques ; le chemin d'origine est retourné,
+    // car la forme canonique Windows (\\?\C:\...) n'est pas comprise par
+    // toutes les applications (Excel, Explorateur).
+    let dossier_canonique = dossier.canonicalize().map_err(|_| introuvable())?;
+    let chemin_canonique = chemin.canonicalize().map_err(|_| introuvable())?;
+    if !chemin_canonique.starts_with(&dossier_canonique) {
         return Err(erreur(
             "fichier_refuse",
             "Seuls les fichiers du traitement ouvert peuvent être ouverts.",
         ));
     }
-    Ok(chemin)
+    Ok(chemin.to_path_buf())
 }
 
 #[tauri::command]

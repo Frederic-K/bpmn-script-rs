@@ -1,0 +1,73 @@
+# Qualification Windows (lot M6) : tests, installateur, 30 scénarios, lancement.
+name: Windows
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust (version fixée par rust-toolchain.toml)
+        run: |
+          rustup toolchain install
+          cargo --version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Dépendances de l'interface (versions verrouillées)
+        run: npm ci
+
+      - name: Tests Rust (moteur, CLI, traitement, application)
+        run: cargo test --workspace --locked
+
+      - name: Application et installateur
+        run: npm run tauri build
+
+      - name: CLI historique
+        run: cargo build --release --locked -p bpmn-script-rs
+
+      - name: Qualification V1 (30 scénarios, binaire Windows)
+        shell: pwsh
+        run: |
+          $paquet = Join-Path $env:RUNNER_TEMP "qualification"
+          Expand-Archive docs/dossier-claude/references/qualification-rust-reproductible.zip -DestinationPath $paquet
+          python -m pip install --quiet openpyxl==3.1.5
+          $binaire = (Resolve-Path target/release/bpmn-script-rs.exe).Path
+          python (Join-Path $paquet "qualify_rust.py") --root $paquet --binary $binaire
+          if ($LASTEXITCODE -ne 0) { throw "pilote interrompu" }
+          python tests/qualification/verifier_v1.py (Join-Path $paquet "rust-qualification-results.json")
+          if ($LASTEXITCODE -ne 0) { throw "attentes V1 non respectées" }
+
+      - name: Lancement de l'application (WebView2)
+        shell: pwsh
+        run: |
+          $application = Start-Process target/release/bpmn-script-app.exe -PassThru
+          Start-Sleep -Seconds 15
+          if ($application.HasExited) { throw "arrêt au lancement, code $($application.ExitCode)" }
+          Write-Output "Application lancée depuis 15 s (processus $($application.Id))."
+          Stop-Process -Id $application.Id
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bpmn-script-windows
+          retention-days: 30
+          path: |
+            target/release/bundle/nsis/*.exe
+            target/release/bpmn-script-app.exe
+            target/release/bpmn-script-rs.exe

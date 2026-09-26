@@ -742,7 +742,11 @@ fn toutes_decisions_oui_produisent_le_sgx() {
     assert!(stdout(&sortie).contains("[OK] SGX modifié généré"));
     assert_eq!(
         derniere_ligne(&sortie),
-        "[RÉSULTAT] SGX produit et vérifié : output/export_modifie.sgx (2 modèle(s), 3 occurrence(s))"
+        format!(
+            "[RÉSULTAT] SGX produit et vérifié : {} (2 modèle(s), 3 occurrence(s))",
+            // Séparateur de la plateforme dans le chemin affiché.
+            Path::new("output").join("export_modifie.sgx").display()
+        )
     );
 
     // La lane « A » est renommée partout ; nom d'origine avec espaces remplacé,
@@ -890,7 +894,8 @@ fn ancienne_sortie_jamais_ecrasee() {
     espace.validation(&[ligne_a(Texte("OUI")), ligne_b(Texte("OUI"))]);
     let sortie = espace.lancer();
     assert_eq!(sortie.status.code(), Some(0));
-    assert!(derniere_ligne(&sortie).contains("output/export_modifie_2.sgx"));
+    let attendu = Path::new("output").join("export_modifie_2.sgx");
+    assert!(derniere_ligne(&sortie).contains(&attendu.display().to_string()));
     assert_eq!(
         fs::read(espace.chemin(SORTIE_SGX)).unwrap(),
         b"ANCIENNE-SORTIE"
