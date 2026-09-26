@@ -67,11 +67,11 @@ Règles de renommage, contrôles et attentes V1 inchangés.
 
 | Contrôle | Résultat |
 |---|---|
-| `cargo test --workspace --locked` | 83 tests : 26 unitaires, 2 de bibliothèque, 33 CLI, 20 de traitement, 2 de l'adaptateur. Sous Linux ; sous Windows pour les 81 d'avant la revue (les 83 le seront par l'intégration continue Windows) |
+| `cargo test --workspace --locked` | 83 tests : 26 unitaires, 2 de bibliothèque, 33 CLI, 20 de traitement, 2 de l'adaptateur. **sous Linux et sous Windows** |
 | Clippy (`-D warnings`), rustfmt, `npm run build` | Propres, sans avertissement |
 | Qualification V1 (30 scénarios comparés au Python d'origine) | Conforme sous Linux et avec le binaire Windows (`tests/qualification/verifier_v1.py`) |
 | Test de bout en bout de la vraie application (Linux, WebKitGTK) | 23 contrôles réussis après les corrections de la revue, dont le double clic sur « Générer » (une seule tentative), le classeur modifié qui suspend la génération, et les transitions D02, D03, D04, D08 |
-| Windows (GitHub Actions) | Tests, installateur, qualification et lancement réussis : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36253157042 |
+| Windows (GitHub Actions) | Tests, installateur, qualification et lancement réussis sur `abe5311` (corrections de la revue) : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36264584759 |
 | Mutations volontaires du code (M1) | 5 sur 5 détectées par les tests |
 
 **Non vérifié :**
