@@ -34,20 +34,35 @@
     if (etape.id === ecran) return "en cours";
     return "";
   }
+
+  function classesDuNumero(etape) {
+    if (etape.faite && !etape.aRelire) return "border-ok bg-ok text-fond";
+    if (etape.id === ecran) return "border-accent text-accent";
+    return "border-trait text-encre-2";
+  }
 </script>
 
-<nav class="etapes" aria-label="Étapes du traitement">
+<nav
+  class="grid content-start gap-0.5 overflow-y-auto border-r border-trait px-2.5 py-3.5
+    max-[980px]:auto-cols-[minmax(96px,1fr)] max-[980px]:grid-flow-col max-[980px]:overflow-x-auto
+    max-[980px]:border-r-0 max-[980px]:border-b"
+  aria-label="Étapes du traitement"
+>
   {#each etapes as etape, index}
     <button
       type="button"
-      class:faite={etape.faite && !etape.aRelire}
+      class="grid w-full cursor-pointer grid-cols-[24px_1fr] items-center gap-x-2 gap-y-0.5 rounded-md p-2 text-left
+        enabled:hover:bg-surface disabled:cursor-default disabled:opacity-50 aria-[current=step]:bg-accent-doux"
       disabled={!etape.accessible}
       aria-current={etape.id === ecran ? "step" : undefined}
       onclick={() => naviguer(etape.id)}
     >
-      <span class="numero" aria-hidden="true">{etape.faite && !etape.aRelire ? "✓" : index + 1}</span>
-      <span class="libelle">{etape.libelle}</span>
-      <span class="sous">{etatDeLEtape(etape)}</span>
+      <span class="grid size-6 place-items-center rounded-full border-[1.5px] text-xs font-semibold {classesDuNumero(etape)}" aria-hidden="true">
+        {etape.faite && !etape.aRelire ? "✓" : index + 1}
+      </span>
+      <!-- La classe « libelle » sert de repère au test de bout en bout. -->
+      <span class="libelle font-semibold">{etape.libelle}</span>
+      <span class="col-start-2 text-xs text-encre-2 max-[980px]:hidden">{etatDeLEtape(etape)}</span>
     </button>
   {/each}
 </nav>

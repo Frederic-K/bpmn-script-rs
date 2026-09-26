@@ -1,6 +1,6 @@
 <script>
   import * as moteur from "../moteur.js";
-  import { dateHeure, STATUTS } from "../format.js";
+  import { dateHeure, pastilleDuStatut, STATUTS } from "../format.js";
   import Fichier from "./Fichier.svelte";
   import Message from "./Message.svelte";
 
@@ -25,7 +25,7 @@
   }
 </script>
 
-<h1 tabindex="-1">Résultat</h1>
+<h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">Résultat</h1>
 
 {#each etat.tentatives_interrompues as dossier}
   <Message type="alerte" etiquette="Interrompue" titre="Une production a été interrompue avant d'être enregistrée. Son contenu n'est pas confirmé et n'est jamais présenté comme un résultat :" details={[dossier]} />
@@ -49,8 +49,8 @@
     <div class="chiffre"><b>{courante.occurrences_modifiees}</b><span>occurrences renommées</span></div>
     <div class="chiffre"><b>{dateHeure(courante.horodatage)}</b><span>tentative {courante.numero}</span></div>
   </div>
-  <div class="rangee">
-    <button class="bouton principal" type="button" disabled={occupe || courante.etat_sgx === "Absent"} onclick={() => executer("Ouverture du dossier", () => moteur.afficherDansDossier(courante.sgx))}>
+  <div class="flex flex-wrap items-center gap-2">
+    <button class="bouton bouton-principal" type="button" disabled={occupe || courante.etat_sgx === "Absent"} onclick={() => executer("Ouverture du dossier", () => moteur.afficherDansDossier(courante.sgx))}>
       Afficher le SGX dans le dossier
     </button>
     <button class="bouton" type="button" disabled={occupe} onclick={() => executer("Ouverture du rapport", () => moteur.ouvrirFichier(rapport(courante)))}>
@@ -70,17 +70,17 @@
 {/if}
 
 {#if precedentes.length > 0}
-  <section class="choix" aria-labelledby="titre-precedents">
-    <h2 id="titre-precedents">Résultats précédents</h2>
-    <p class="petit">Non produits à partir des correspondances et décisions actuellement lues.</p>
+  <section class="grid content-start gap-3 rounded-lg border border-trait p-4.5" aria-labelledby="titre-precedents">
+    <h2 id="titre-precedents" class="text-base font-semibold">Résultats précédents</h2>
+    <p class="text-xs text-encre-2">Non produits à partir des correspondances et décisions actuellement lues.</p>
     {#each precedentes as tentative}
-      <div class="tentative">
-        <div class="ligne">
+      <div class="grid gap-1 border-t border-trait pt-2.5 text-[13px]">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <strong>Tentative {tentative.numero} · {dateHeure(tentative.horodatage)}</strong>
-          <span class="pastille {STATUTS[tentative.statut]?.couleur ?? 'neutre'}">{STATUTS[tentative.statut]?.libelle ?? tentative.statut}</span>
+          <span class={pastilleDuStatut(tentative.statut)}>{STATUTS[tentative.statut]?.libelle ?? tentative.statut}</span>
         </div>
         {#if tentative.sgx}
-          <span class="petit">{tentative.sgx}{tentative.etat_sgx !== "Disponible" ? ` — ${ETATS_FICHIER[tentative.etat_sgx]}` : ""}</span>
+          <span class="text-xs text-encre-2">{tentative.sgx}{tentative.etat_sgx !== "Disponible" ? ` — ${ETATS_FICHIER[tentative.etat_sgx]}` : ""}</span>
         {/if}
       </div>
     {/each}

@@ -110,7 +110,7 @@ def cliquer(texte):
 
 
 def aller_a_l_etape(libelle):
-    selecteur = f"//nav//button[.//span[@class='libelle' and text()=\"{libelle}\"]]"
+    selecteur = f"//nav//button[.//span[contains(concat(' ', @class, ' '), ' libelle ') and text()=\"{libelle}\"]]"
     attente.until(lambda _: fenetre.find_element(By.XPATH, selecteur).click() or True)
 
 

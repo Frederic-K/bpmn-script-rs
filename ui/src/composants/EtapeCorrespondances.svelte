@@ -23,8 +23,8 @@
   }
 </script>
 
-<h1 tabindex="-1">Correspondances</h1>
-<p class="intro">Renseignez les nouveaux noms dans Excel. Une cellule Nouveau nom vide laisse le nom inchangé.</p>
+<h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">Correspondances</h1>
+<p class="max-w-[72ch] text-encre-2">Renseignez les nouveaux noms dans Excel. Une cellule Nouveau nom vide laisse le nom inchangé.</p>
 
 <Fichier type="XLSX" chemin={etat.edition_correspondances}>
   <button class="bouton" type="button" disabled={occupe} onclick={() => executer("Ouverture du classeur", () => moteur.ouvrirFichier(etat.edition_correspondances))}>
@@ -58,14 +58,14 @@
   {/if}
 {/if}
 
-<div class="rangee">
-  <button class="bouton" class:principal={aLire} type="button" disabled={occupe} onclick={() => lire()}>
+<div class="flex flex-wrap items-center gap-2">
+  <button class="bouton" class:bouton-principal={aLire} type="button" disabled={occupe} onclick={() => lire()}>
     {etat.correspondances_adoptees ? "Relire les correspondances" : "Lire les correspondances"}
   </button>
   <button class="bouton" type="button" disabled={occupe} onclick={importer}>Importer un classeur de correspondances</button>
   {#if etat.analyse_preparee}
-    <button class="bouton principal" type="button" disabled={occupe || aLire} onclick={() => naviguer("analyse")}>Voir l'analyse</button>
+    <button class="bouton bouton-principal" type="button" disabled={occupe || aLire} onclick={() => naviguer("analyse")}>Voir l'analyse</button>
   {:else if etat.correspondances_adoptees}
-    <button class="bouton principal" type="button" disabled={occupe || aLire} onclick={preparerAnalyse}>Préparer l'analyse</button>
+    <button class="bouton bouton-principal" type="button" disabled={occupe || aLire} onclick={preparerAnalyse}>Préparer l'analyse</button>
   {/if}
 </div>

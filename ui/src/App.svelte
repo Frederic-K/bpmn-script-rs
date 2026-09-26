@@ -78,12 +78,12 @@
 
 <svelte:window onfocus={actualiser} />
 
-<div class="application">
-  <header class="barre">
-    <span class="appli">BPMN-Script</span>
+<div class="grid h-full grid-rows-[auto_1fr]">
+  <header class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-trait bg-surface px-4 py-2.5">
+    <span class="font-semibold">BPMN-Script</span>
     {#if etat}
-      <span class="traitement">· {etat.nom}</span>
-      <span class="espace"></span>
+      <span class="text-encre-2 [overflow-wrap:anywhere]">· {etat.nom}</span>
+      <span class="flex-1"></span>
       <button class="bouton" disabled={!!occupe} onclick={() => executer("Ouverture du dossier", () => moteur.afficherDansDossier(etat.dossier))}>
         Afficher le dossier du traitement
       </button>
@@ -91,12 +91,19 @@
     {/if}
   </header>
 
-  <div class="corps" class:accueil={!etat}>
+  <div
+    class="grid min-h-0 max-[980px]:grid-cols-1 max-[980px]:overflow-y-auto
+      {etat ? 'grid-cols-[212px_minmax(0,1fr)_268px]' : 'grid-cols-1'}"
+  >
     {#if etat}
       <Etapes {etat} {ecran} {naviguer} />
     {/if}
 
-    <main class="contenu" bind:this={contenu}>
+    <main
+      class="grid min-w-0 content-start gap-4.5 overflow-y-auto px-6.5 pt-5.5 pb-8
+        max-[980px]:overflow-visible max-[980px]:px-4 max-[980px]:pt-4.5"
+      bind:this={contenu}
+    >
       {#if erreur}
         <Message type="erreur" etiquette="Erreur" titre={erreur.message} details={erreur.details} />
       {/if}
@@ -123,5 +130,8 @@
 </div>
 
 <div role="status" aria-live="polite">
-  {#if occupe}<span class="occupe">{occupe}…</span>{/if}
+  {#if occupe}
+    <!-- La classe « occupe » sert de repère au test de bout en bout. -->
+    <span class="occupe fixed right-4 bottom-4 rounded-md bg-encre px-3.5 py-2 font-semibold text-fond shadow-lg">{occupe}…</span>
+  {/if}
 </div>

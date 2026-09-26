@@ -35,7 +35,7 @@ Dépendances du moteur, une par besoin :
 | `rust_xlsxwriter` | Écrire les Excel produits |
 | `sha2` | Empreintes des fichiers du traitement |
 
-Application : `tauri`, `tauri-plugin-dialog` (choix de fichiers), `tauri-plugin-opener` (ouvrir un classeur, afficher un fichier dans l'Explorateur). Interface : `svelte`, `vite`, `@tauri-apps/api`.
+Application : `tauri`, `tauri-plugin-dialog` (choix de fichiers), `tauri-plugin-opener` (ouvrir un classeur, afficher un fichier dans l'Explorateur). Interface : `svelte`, `vite`, `tailwindcss` (et `@tailwindcss/vite`), `@tauri-apps/api`.
 
 ## Compilation
 

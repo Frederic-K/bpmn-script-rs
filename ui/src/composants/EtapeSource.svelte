@@ -4,9 +4,9 @@
   let { etat, naviguer } = $props();
 </script>
 
-<h1 tabindex="-1">Source</h1>
+<h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">Source</h1>
 <Fichier type="SGX" chemin={etat.source_chemin_original} />
-<p class="petit">
+<p class="text-xs text-encre-2">
   L'application travaille sur une copie contrôlée par empreinte, dans le dossier du traitement. L'original peut être
   déplacé sans gêner la reprise.
 </p>
@@ -20,8 +20,8 @@
 {#if etat.occurrences_inventoriees === 0}
   <p>Les modèles de ce SGX ne contiennent aucune lane nommée : il n'y a rien à harmoniser.</p>
 {:else}
-  <div class="rangee">
-    <button class="bouton principal" type="button" onclick={() => naviguer("correspondances")}>
+  <div class="flex flex-wrap items-center gap-2">
+    <button class="bouton bouton-principal" type="button" onclick={() => naviguer("correspondances")}>
       Préparer les correspondances
     </button>
   </div>

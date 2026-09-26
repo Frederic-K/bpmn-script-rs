@@ -1,10 +1,11 @@
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import tailwindcss from "@tailwindcss/vite";
 
 // Interface dans ui/, construite dans dist/ puis embarquée par Tauri (src-tauri/tauri.conf.json).
 export default defineConfig({
   root: "ui",
-  plugins: [svelte()],
+  plugins: [svelte(), tailwindcss()],
   clearScreen: false,
   server: { port: 5173, strictPort: true },
   build: { outDir: "../dist", emptyOutDir: true },

@@ -1,136 +1,79 @@
-/* Couleurs : thème clair par défaut, thème sombre selon le réglage du système. */
-:root {
-  --fond: #ffffff;
-  --surface-2: #f6f8f9;
-  --encre: #1b2430;
-  --encre-2: #4f5b68;
-  --trait: #d7dde3;
-  --accent: #1f5f86;
-  --accent-encre: #ffffff;
-  --accent-doux: #e3eef5;
-  --ok: #276b43;
-  --ok-doux: #e3f1e8;
-  --alerte: #8a5300;
-  --alerte-doux: #fbf0dc;
-  --erreur: #a3261d;
-  --erreur-doux: #f9e4e1;
-  --neutre-doux: #eceff2;
-  --police: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --police-mono: "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, monospace;
-  color-scheme: light;
+@import "tailwindcss";
+
+/* Couleurs de l'application : utilisables en classes (bg-fond, text-accent,
+   border-trait...). Le thème sombre redéfinit les mêmes variables selon le
+   réglage du système : aucune classe dark: n'est nécessaire. */
+@theme {
+  --color-fond: #ffffff;
+  --color-surface: #f6f8f9;
+  --color-encre: #1b2430;
+  --color-encre-2: #4f5b68;
+  --color-trait: #d7dde3;
+  --color-accent: #1f5f86;
+  --color-accent-encre: #ffffff;
+  --color-accent-doux: #e3eef5;
+  --color-ok: #276b43;
+  --color-ok-doux: #e3f1e8;
+  --color-alerte: #8a5300;
+  --color-alerte-doux: #fbf0dc;
+  --color-erreur: #a3261d;
+  --color-erreur-doux: #f9e4e1;
+  --color-neutre-doux: #eceff2;
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, monospace;
 }
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --fond: #1a2027; --surface-2: #20272f; --encre: #e7ecf0; --encre-2: #a9b4bf;
-    --trait: #323c46; --accent: #6fb0d8; --accent-encre: #0e1a22; --accent-doux: #1d3242;
-    --ok: #7cc79a; --ok-doux: #1b3325; --alerte: #e4b565; --alerte-doux: #3a2c14;
-    --erreur: #f0948b; --erreur-doux: #40201d; --neutre-doux: #262e36;
+    --color-fond: #1a2027;
+    --color-surface: #20272f;
+    --color-encre: #e7ecf0;
+    --color-encre-2: #a9b4bf;
+    --color-trait: #323c46;
+    --color-accent: #6fb0d8;
+    --color-accent-encre: #0e1a22;
+    --color-accent-doux: #1d3242;
+    --color-ok: #7cc79a;
+    --color-ok-doux: #1b3325;
+    --color-alerte: #e4b565;
+    --color-alerte-doux: #3a2c14;
+    --color-erreur: #f0948b;
+    --color-erreur-doux: #40201d;
+    --color-neutre-doux: #262e36;
     color-scheme: dark;
   }
 }
 
-* { box-sizing: border-box; }
-html, body, #application { height: 100%; }
-body { margin: 0; background: var(--fond); color: var(--encre); font: 14px/1.5 var(--police); }
-h1 { font-size: 20px; line-height: 1.3; margin: 0; text-wrap: balance; }
-h1:focus { outline: none; }
-h2 { font-size: 15px; margin: 0; }
-p { margin: 0; max-width: 72ch; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@layer base {
+  html, body, #application { height: 100%; }
+  body { background: var(--color-fond); color: var(--color-encre); font-size: 14px; line-height: 1.5; }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  h1:focus { outline: none; }
+}
 
-/* Structure : barre, étapes, contenu, bilan. */
-.application { display: grid; grid-template-rows: auto 1fr; height: 100%; }
-.barre { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; border-bottom: 1px solid var(--trait); background: var(--surface-2); }
-.barre .appli { font-weight: 650; }
-.barre .traitement { color: var(--encre-2); overflow-wrap: anywhere; }
-.barre .espace { flex: 1; }
-.corps { display: grid; grid-template-columns: 212px minmax(0, 1fr) 268px; min-height: 0; }
-.corps.accueil { grid-template-columns: minmax(0, 1fr); }
-.contenu { padding: 22px 26px 32px; display: grid; align-content: start; gap: 18px; min-width: 0; overflow-y: auto; }
+/* Éléments répétés dans tous les écrans : une classe courte plutôt que vingt
+   utilitaires recopiés à chaque bouton, pastille ou tableau. */
+@layer components {
+  .bouton {
+    @apply cursor-pointer rounded-md border border-trait bg-fond px-3.5 py-2 text-sm font-semibold text-encre
+      enabled:hover:bg-surface disabled:cursor-not-allowed disabled:opacity-45;
+  }
+  .bouton-principal {
+    @apply border-accent bg-accent text-accent-encre enabled:hover:bg-accent enabled:hover:brightness-110;
+  }
 
-nav.etapes { border-right: 1px solid var(--trait); padding: 14px 10px; display: grid; align-content: start; gap: 2px; overflow-y: auto; }
-nav.etapes button { display: grid; grid-template-columns: 24px 1fr; gap: 2px 8px; align-items: center; text-align: left; width: 100%; border: 0; background: none; color: var(--encre); font: inherit; padding: 8px; border-radius: 6px; cursor: pointer; }
-nav.etapes button:hover:not(:disabled) { background: var(--surface-2); }
-nav.etapes button:disabled { opacity: .5; cursor: default; }
-nav.etapes button[aria-current="step"] { background: var(--accent-doux); }
-nav.etapes .numero { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 650; border: 1.5px solid var(--trait); color: var(--encre-2); }
-nav.etapes .faite .numero { background: var(--ok); border-color: var(--ok); color: var(--fond); }
-nav.etapes [aria-current="step"] .numero { border-color: var(--accent); color: var(--accent); }
-nav.etapes .faite[aria-current="step"] .numero { border-color: var(--ok); color: var(--fond); }
-nav.etapes .libelle { font-weight: 600; }
-nav.etapes .sous { grid-column: 2; font-size: 12px; color: var(--encre-2); }
+  .pastille {
+    @apply inline-flex items-center gap-1.5 justify-self-start rounded-full px-2.5 py-0.5 text-xs font-semibold
+      before:size-[7px] before:flex-none before:rounded-full before:bg-current before:content-[''];
+  }
 
-aside.bilan { border-left: 1px solid var(--trait); padding: 18px 16px; display: grid; align-content: start; gap: 14px; background: var(--surface-2); min-width: 0; overflow-y: auto; }
-aside.bilan h2 { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--encre-2); }
+  .chiffres { @apply grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5; }
+  .chiffre { @apply rounded-md border border-trait px-3 py-2.5; }
+  .chiffre b { @apply block text-[22px] leading-tight font-bold tabular-nums; }
+  .chiffre span { @apply text-xs text-encre-2; }
 
-/* Éléments communs. */
-.intro { color: var(--encre-2); }
-.petit { font-size: 12px; color: var(--encre-2); }
-.rangee { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.bouton { font: 600 14px var(--police); border-radius: 6px; padding: 8px 14px; border: 1px solid var(--trait); background: var(--fond); color: var(--encre); cursor: pointer; }
-.bouton:hover:not(:disabled) { background: var(--surface-2); }
-.bouton.principal { background: var(--accent); border-color: var(--accent); color: var(--accent-encre); }
-.bouton.principal:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
-.bouton:disabled { opacity: .45; cursor: not-allowed; }
-
-.fichier { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; border: 1px solid var(--trait); border-radius: 6px; padding: 10px 12px; }
-.fichier .type { font: 600 11px var(--police-mono); color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 1px 5px; }
-.fichier .nom { font-weight: 600; overflow-wrap: anywhere; }
-.fichier .actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
-.fichier .chemin { grid-column: 2 / 4; font: 12px var(--police-mono); color: var(--encre-2); overflow-wrap: anywhere; user-select: text; }
-
-.chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
-.chiffre { border: 1px solid var(--trait); border-radius: 6px; padding: 10px 12px; }
-.chiffre b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1.2; }
-.chiffre span { font-size: 12px; color: var(--encre-2); }
-
-.message { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; border-radius: 6px; padding: 12px 14px; }
-.message .etiquette { font: 700 11px var(--police); letter-spacing: .05em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; align-self: start; margin-top: 2px; }
-.message.info { background: var(--accent-doux); } .message.info .etiquette { background: var(--accent); color: var(--accent-encre); }
-.message.ok { background: var(--ok-doux); } .message.ok .etiquette { background: var(--ok); color: var(--fond); }
-.message.alerte { background: var(--alerte-doux); } .message.alerte .etiquette { background: var(--alerte); color: var(--fond); }
-.message.erreur { background: var(--erreur-doux); } .message.erreur .etiquette { background: var(--erreur); color: var(--fond); }
-.message .texte { display: grid; gap: 6px; min-width: 0; }
-.message ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13px; overflow-wrap: anywhere; user-select: text; }
-
-.pastille { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 9px; justify-self: start; }
-.pastille::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
-.pastille.ok { background: var(--ok-doux); color: var(--ok); }
-.pastille.alerte { background: var(--alerte-doux); color: var(--alerte); }
-.pastille.erreur { background: var(--erreur-doux); color: var(--erreur); }
-.pastille.neutre { background: var(--neutre-doux); color: var(--encre-2); }
-
-.categories { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; }
-.categorie { border: 1px solid var(--trait); border-radius: 6px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; }
-.categorie b { font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1.2; }
-.categorie small { color: var(--encre-2); }
-
-.tableau { overflow-x: auto; border: 1px solid var(--trait); border-radius: 6px; max-height: 360px; }
-table { border-collapse: collapse; width: 100%; font-size: 13px; }
-th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--trait); vertical-align: top; }
-th { background: var(--surface-2); font-size: 12px; color: var(--encre-2); font-weight: 600; white-space: nowrap; position: sticky; top: 0; }
-tr:last-child td { border-bottom: 0; }
-.nombre { text-align: right; font-variant-numeric: tabular-nums; }
-td.mono { font: 12px var(--police-mono); color: var(--encre-2); overflow-wrap: anywhere; min-width: 220px; }
-.nom-lane { white-space: pre-wrap; }
-.nouveau { font-weight: 600; }
-
-dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 13px; }
-dt { color: var(--encre-2); }
-dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-.tentative { border-top: 1px solid var(--trait); padding-top: 10px; display: grid; gap: 4px; font-size: 13px; }
-.tentative .ligne { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
-
-.choix-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; max-width: 860px; }
-.choix { border: 1px solid var(--trait); border-radius: 8px; padding: 18px; display: grid; gap: 12px; align-content: start; }
-.choix h2 { font-size: 16px; }
-
-.occupe { position: fixed; inset: auto 16px 16px auto; background: var(--encre); color: var(--fond); border-radius: 6px; padding: 8px 14px; font-weight: 600; box-shadow: 0 4px 16px rgba(0, 0, 0, .2); }
-
-@media (max-width: 980px) {
-  .corps { grid-template-columns: minmax(0, 1fr); overflow-y: auto; }
-  nav.etapes { border-right: 0; border-bottom: 1px solid var(--trait); grid-auto-flow: column; grid-auto-columns: minmax(96px, 1fr); overflow-x: auto; }
-  nav.etapes .sous { display: none; }
-  aside.bilan { border-left: 0; border-top: 1px solid var(--trait); }
-  .contenu { padding: 18px 16px 22px; overflow: visible; }
+  .tableau { @apply max-h-90 overflow-x-auto rounded-md border border-trait; }
+  .tableau table { @apply w-full border-collapse text-[13px]; }
+  .tableau th { @apply sticky top-0 bg-surface px-2.5 py-1.5 text-left text-xs font-semibold whitespace-nowrap text-encre-2; }
+  .tableau td { @apply border-t border-trait px-2.5 py-1.5 text-left align-top; }
 }
