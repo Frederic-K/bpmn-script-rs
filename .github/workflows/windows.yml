@@ -4,6 +4,8 @@ name: Windows
 on:
   push:
     branches: ["main", "claude/**"]
+    # Un changement de documentation seule ne relance pas 20 minutes de compilation.
+    paths-ignore: ["docs/**", "**/*.md"]
   workflow_dispatch:
 
 permissions:
