@@ -11,7 +11,8 @@ BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des
 - **Commentaires `//` simples, en français**, seulement pour expliquer un choix non évident. Pas de `///`, `//!` ni de JSDoc.
 - **Interface : Svelte 5 en JavaScript uniquement.** Aucun `.ts`, aucun `lang="ts"`, aucune configuration TypeScript. Pas de store global, pas de mémoïsation, pas d'habitudes React.
 - Composants aux responsabilités claires : ni composant monolithique, ni micro-composants.
-- **Styles : Tailwind CSS v4**, en classes utilitaires dans les composants. Les couleurs sont définies une seule fois dans `@theme` (`ui/src/style.css`) et le thème sombre redéfinit ces variables : pas de classes `dark:`. Les éléments répétés gardent une classe commune (`.bouton`, `.bouton-principal`, `.pastille`, `.chiffres`, `.tableau`). Les classes calculées en JavaScript doivent être écrites en entier (voir `PASTILLES` dans `format.js`).
+- **Styles : Tailwind CSS v4**, en classes utilitaires dans les composants. Les couleurs sont définies une seule fois dans `@theme` (`ui/src/style.css`) et le thème sombre redéfinit ces variables : pas de classes `dark:`. Les éléments répétés sont des composants (`Bouton`, `Pastille`, `Chiffre`, `Tableau`), jamais des classes `@apply`. Les classes choisies en JavaScript sont écrites en entier (Tailwind ne détecte pas les noms construits).
+- **Thème** : bascule clair/sombre par `data-theme` sur `<html>` (`main.js` à l'ouverture, `basculerTheme` dans `App.svelte`), choix mémorisé dans `localStorage`, thème du système au premier lancement.
 
 ## Structure
 
@@ -27,8 +28,8 @@ BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des
 | `src-tauri/src/lib.rs` | Commandes Tauri : une par opération, dialogues, ouverture de fichiers limitée au traitement |
 | `ui/src/App.svelte` | Seul détenteur de l'état de l'interface ; `executer` : une action à la fois |
 | `ui/src/moteur.js` | Une fonction par commande Tauri |
-| `ui/src/composants/` | Un composant par étape, plus `Etapes`, `BilanTraitement`, `Message`, `Fichier` |
-| `ui/src/style.css` | Tailwind : couleurs (`@theme`), thème sombre, classes communes |
+| `ui/src/composants/` | Un composant par étape ; `Etapes`, `BilanTraitement`, `Message`, `Fichier` ; éléments répétés `Bouton`, `Pastille`, `Chiffre`, `Tableau` |
+| `ui/src/style.css` | Tailwind : couleurs (`@theme`) et leurs valeurs du thème sombre |
 | `tests/` | `cli.rs`, `chemins.rs`, `traitement.rs` ; `interface/parcours.py` (bout en bout) ; `qualification/verifier_v1.py` |
 | `docs/m0…m6-*.md` | Comptes rendus des lots, avec preuves et limites |
 

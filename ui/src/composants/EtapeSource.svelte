@@ -1,4 +1,6 @@
 <script>
+  import Bouton from "./Bouton.svelte";
+  import Chiffre from "./Chiffre.svelte";
   import Fichier from "./Fichier.svelte";
 
   let { etat, naviguer } = $props();
@@ -11,18 +13,14 @@
   déplacé sans gêner la reprise.
 </p>
 
-<div class="chiffres">
-  <div class="chiffre"><b>{etat.modeles_reconnus}</b><span>modèles reconnus</span></div>
-  <div class="chiffre"><b>{etat.occurrences_inventoriees}</b><span>occurrences de lanes</span></div>
-  <div class="chiffre"><b>{etat.noms_distincts}</b><span>noms distincts</span></div>
+<div class="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
+  <Chiffre valeur={etat.modeles_reconnus} libelle="modèles reconnus" />
+  <Chiffre valeur={etat.occurrences_inventoriees} libelle="occurrences de lanes" />
+  <Chiffre valeur={etat.noms_distincts} libelle="noms distincts" />
 </div>
 
 {#if etat.occurrences_inventoriees === 0}
   <p>Les modèles de ce SGX ne contiennent aucune lane nommée : il n'y a rien à harmoniser.</p>
 {:else}
-  <div class="flex flex-wrap items-center gap-2">
-    <button class="bouton bouton-principal" type="button" onclick={() => naviguer("correspondances")}>
-      Préparer les correspondances
-    </button>
-  </div>
+  <div><Bouton principal onclick={() => naviguer("correspondances")}>Préparer les correspondances</Bouton></div>
 {/if}

@@ -1,5 +1,6 @@
 <script>
-  import { dateHeure, pastilleDuStatut, STATUTS } from "../format.js";
+  import { dateHeure, STATUTS } from "../format.js";
+  import Pastille from "./Pastille.svelte";
 
   let { etat } = $props();
 
@@ -34,12 +35,12 @@
     <div class="grid gap-1 border-t border-trait pt-2.5 text-[13px]">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <strong>Tentative {derniere.numero}</strong>
-        <span class={pastilleDuStatut(derniere.statut)}>{STATUTS[derniere.statut]?.libelle ?? derniere.statut}</span>
+        <Pastille couleur={STATUTS[derniere.statut]?.couleur}>{STATUTS[derniere.statut]?.libelle ?? derniere.statut}</Pastille>
       </div>
       <span class="text-xs text-encre-2">{dateHeure(derniere.horodatage)} · {derniere.courante ? "entrées actuelles" : "entrées précédentes"}</span>
     </div>
   {/if}
   {#if etat.tentatives_interrompues.length > 0}
-    <span class="pastille bg-alerte-doux text-alerte">{etat.tentatives_interrompues.length} tentative(s) interrompue(s)</span>
+    <Pastille couleur="alerte">{etat.tentatives_interrompues.length} tentative(s) interrompue(s)</Pastille>
   {/if}
 </aside>

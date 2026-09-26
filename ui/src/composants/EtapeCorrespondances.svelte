@@ -1,5 +1,6 @@
 <script>
   import * as moteur from "../moteur.js";
+  import Bouton from "./Bouton.svelte";
   import Fichier from "./Fichier.svelte";
   import Message from "./Message.svelte";
 
@@ -27,9 +28,9 @@
 <p class="max-w-[72ch] text-encre-2">Renseignez les nouveaux noms dans Excel. Une cellule Nouveau nom vide laisse le nom inchangé.</p>
 
 <Fichier type="XLSX" chemin={etat.edition_correspondances}>
-  <button class="bouton" type="button" disabled={occupe} onclick={() => executer("Ouverture du classeur", () => moteur.ouvrirFichier(etat.edition_correspondances))}>
+  <Bouton disabled={occupe} onclick={() => executer("Ouverture du classeur", () => moteur.ouvrirFichier(etat.edition_correspondances))}>
     Ouvrir le classeur
-  </button>
+  </Bouton>
 </Fichier>
 
 {#if etat.correspondances_adoptees && etat.correspondances_a_relire}
@@ -59,13 +60,13 @@
 {/if}
 
 <div class="flex flex-wrap items-center gap-2">
-  <button class="bouton" class:bouton-principal={aLire} type="button" disabled={occupe} onclick={() => lire()}>
+  <Bouton principal={aLire} disabled={occupe} onclick={() => lire()}>
     {etat.correspondances_adoptees ? "Relire les correspondances" : "Lire les correspondances"}
-  </button>
-  <button class="bouton" type="button" disabled={occupe} onclick={importer}>Importer un classeur de correspondances</button>
+  </Bouton>
+  <Bouton disabled={occupe} onclick={importer}>Importer un classeur de correspondances</Bouton>
   {#if etat.analyse_preparee}
-    <button class="bouton bouton-principal" type="button" disabled={occupe || aLire} onclick={() => naviguer("analyse")}>Voir l'analyse</button>
+    <Bouton principal disabled={occupe || aLire} onclick={() => naviguer("analyse")}>Voir l'analyse</Bouton>
   {:else if etat.correspondances_adoptees}
-    <button class="bouton bouton-principal" type="button" disabled={occupe || aLire} onclick={preparerAnalyse}>Préparer l'analyse</button>
+    <Bouton principal disabled={occupe || aLire} onclick={preparerAnalyse}>Préparer l'analyse</Bouton>
   {/if}
 </div>

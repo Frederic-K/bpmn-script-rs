@@ -55,13 +55,13 @@
         enabled:hover:bg-surface disabled:cursor-default disabled:opacity-50 aria-[current=step]:bg-accent-doux"
       disabled={!etape.accessible}
       aria-current={etape.id === ecran ? "step" : undefined}
+      data-etape={etape.id}
       onclick={() => naviguer(etape.id)}
     >
       <span class="grid size-6 place-items-center rounded-full border-[1.5px] text-xs font-semibold {classesDuNumero(etape)}" aria-hidden="true">
         {etape.faite && !etape.aRelire ? "✓" : index + 1}
       </span>
-      <!-- La classe « libelle » sert de repère au test de bout en bout. -->
-      <span class="libelle font-semibold">{etape.libelle}</span>
+      <span class="font-semibold">{etape.libelle}</span>
       <span class="col-start-2 text-xs text-encre-2 max-[980px]:hidden">{etatDeLEtape(etape)}</span>
     </button>
   {/each}

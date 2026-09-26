@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
-/* Couleurs de l'application : utilisables en classes (bg-fond, text-accent,
-   border-trait...). Le thème sombre redéfinit les mêmes variables selon le
-   réglage du système : aucune classe dark: n'est nécessaire. */
+/* Couleurs de l'application, utilisables en classes : bg-fond, text-accent,
+   border-trait... Le thème sombre redéfinit les mêmes variables : aucune
+   classe dark: n'est nécessaire dans les composants. */
 @theme {
   --color-fond: #ffffff;
   --color-surface: #f6f8f9;
@@ -23,25 +23,24 @@
   --font-mono: "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-fond: #1a2027;
-    --color-surface: #20272f;
-    --color-encre: #e7ecf0;
-    --color-encre-2: #a9b4bf;
-    --color-trait: #323c46;
-    --color-accent: #6fb0d8;
-    --color-accent-encre: #0e1a22;
-    --color-accent-doux: #1d3242;
-    --color-ok: #7cc79a;
-    --color-ok-doux: #1b3325;
-    --color-alerte: #e4b565;
-    --color-alerte-doux: #3a2c14;
-    --color-erreur: #f0948b;
-    --color-erreur-doux: #40201d;
-    --color-neutre-doux: #262e36;
-    color-scheme: dark;
-  }
+/* Thème sombre : activé par data-theme="dark" sur <html> (voir main.js). */
+:root[data-theme="dark"] {
+  --color-fond: #1a2027;
+  --color-surface: #20272f;
+  --color-encre: #e7ecf0;
+  --color-encre-2: #a9b4bf;
+  --color-trait: #323c46;
+  --color-accent: #6fb0d8;
+  --color-accent-encre: #0e1a22;
+  --color-accent-doux: #1d3242;
+  --color-ok: #7cc79a;
+  --color-ok-doux: #1b3325;
+  --color-alerte: #e4b565;
+  --color-alerte-doux: #3a2c14;
+  --color-erreur: #f0948b;
+  --color-erreur-doux: #40201d;
+  --color-neutre-doux: #262e36;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -49,31 +48,4 @@
   body { background: var(--color-fond); color: var(--color-encre); font-size: 14px; line-height: 1.5; }
   :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
   h1:focus { outline: none; }
-}
-
-/* Éléments répétés dans tous les écrans : une classe courte plutôt que vingt
-   utilitaires recopiés à chaque bouton, pastille ou tableau. */
-@layer components {
-  .bouton {
-    @apply cursor-pointer rounded-md border border-trait bg-fond px-3.5 py-2 text-sm font-semibold text-encre
-      enabled:hover:bg-surface disabled:cursor-not-allowed disabled:opacity-45;
-  }
-  .bouton-principal {
-    @apply border-accent bg-accent text-accent-encre enabled:hover:bg-accent enabled:hover:brightness-110;
-  }
-
-  .pastille {
-    @apply inline-flex items-center gap-1.5 justify-self-start rounded-full px-2.5 py-0.5 text-xs font-semibold
-      before:size-[7px] before:flex-none before:rounded-full before:bg-current before:content-[''];
-  }
-
-  .chiffres { @apply grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5; }
-  .chiffre { @apply rounded-md border border-trait px-3 py-2.5; }
-  .chiffre b { @apply block text-[22px] leading-tight font-bold tabular-nums; }
-  .chiffre span { @apply text-xs text-encre-2; }
-
-  .tableau { @apply max-h-90 overflow-x-auto rounded-md border border-trait; }
-  .tableau table { @apply w-full border-collapse text-[13px]; }
-  .tableau th { @apply sticky top-0 bg-surface px-2.5 py-1.5 text-left text-xs font-semibold whitespace-nowrap text-encre-2; }
-  .tableau td { @apply border-t border-trait px-2.5 py-1.5 text-left align-top; }
 }

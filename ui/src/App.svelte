@@ -2,6 +2,7 @@
   import { tick } from "svelte";
   import * as moteur from "./moteur.js";
   import Accueil from "./composants/Accueil.svelte";
+  import Bouton from "./composants/Bouton.svelte";
   import Etapes from "./composants/Etapes.svelte";
   import BilanTraitement from "./composants/BilanTraitement.svelte";
   import Message from "./composants/Message.svelte";
@@ -17,6 +18,7 @@
   // Libellé de l'action en cours ; vide quand aucune action n'est en cours.
   let occupe = $state("");
   let erreur = $state(null);
+  let theme = $state(document.documentElement.dataset.theme);
   let contenu;
 
   const ECRAN_DE_L_ETAPE = {
@@ -64,6 +66,12 @@
     }
   }
 
+  function basculerTheme() {
+    theme = theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }
+
   // Au retour dans l'application (après Excel), l'état est relu pour signaler
   // un classeur modifié. Une lecture impossible à ce moment est sans conséquence.
   async function actualiser() {
@@ -83,12 +91,15 @@
     <span class="font-semibold">BPMN-Script</span>
     {#if etat}
       <span class="text-encre-2 [overflow-wrap:anywhere]">· {etat.nom}</span>
-      <span class="flex-1"></span>
-      <button class="bouton" disabled={!!occupe} onclick={() => executer("Ouverture du dossier", () => moteur.afficherDansDossier(etat.dossier))}>
-        Afficher le dossier du traitement
-      </button>
-      <button class="bouton" disabled={!!occupe} onclick={fermer}>Fermer le traitement</button>
     {/if}
+    <span class="flex-1"></span>
+    {#if etat}
+      <Bouton disabled={!!occupe} onclick={() => executer("Ouverture du dossier", () => moteur.afficherDansDossier(etat.dossier))}>
+        Afficher le dossier du traitement
+      </Bouton>
+      <Bouton disabled={!!occupe} onclick={fermer}>Fermer le traitement</Bouton>
+    {/if}
+    <Bouton aria-pressed={theme === "dark"} onclick={basculerTheme}>Thème sombre</Bouton>
   </header>
 
   <div
@@ -129,9 +140,8 @@
   </div>
 </div>
 
-<div role="status" aria-live="polite">
+<div id="action-en-cours" role="status" aria-live="polite">
   {#if occupe}
-    <!-- La classe « occupe » sert de repère au test de bout en bout. -->
-    <span class="occupe fixed right-4 bottom-4 rounded-md bg-encre px-3.5 py-2 font-semibold text-fond shadow-lg">{occupe}…</span>
+    <span class="fixed right-4 bottom-4 rounded-md bg-encre px-3.5 py-2 font-semibold text-fond shadow-lg">{occupe}…</span>
   {/if}
 </div>

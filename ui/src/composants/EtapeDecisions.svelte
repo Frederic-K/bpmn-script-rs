@@ -1,8 +1,10 @@
 <script>
   import * as moteur from "../moteur.js";
-  import { PASTILLES } from "../format.js";
+  import Bouton from "./Bouton.svelte";
   import Fichier from "./Fichier.svelte";
   import Message from "./Message.svelte";
+  import Pastille from "./Pastille.svelte";
+  import Tableau from "./Tableau.svelte";
 
   let { etat, executer, naviguer, occupe } = $props();
 
@@ -39,9 +41,9 @@
 
 {#if etat.edition_decisions}
   <Fichier type="XLSX" chemin={etat.edition_decisions}>
-    <button class="bouton" type="button" disabled={occupe} onclick={() => executer("Ouverture du classeur", () => moteur.ouvrirFichier(etat.edition_decisions))}>
+    <Bouton disabled={occupe} onclick={() => executer("Ouverture du classeur", () => moteur.ouvrirFichier(etat.edition_decisions))}>
       Ouvrir le classeur de décision
-    </button>
+    </Bouton>
   </Fichier>
 {/if}
 
@@ -54,41 +56,48 @@
 {/if}
 
 <div class="flex flex-wrap items-center gap-2">
-  <button class="bouton" class:bouton-principal={aLire} type="button" disabled={occupe} onclick={() => lire()}>
+  <Bouton principal={aLire} disabled={occupe} onclick={() => lire()}>
     {etat.decisions_adoptees ? "Relire et contrôler les décisions" : "Lire et contrôler les décisions"}
-  </button>
-  <button class="bouton" type="button" disabled={occupe} onclick={importer}>Importer un retour d'arbitrage</button>
+  </Bouton>
+  <Bouton disabled={occupe} onclick={importer}>Importer un retour d'arbitrage</Bouton>
 </div>
 
 {#if etat.decisions_adoptees && bilan}
-  <div class="grid grid-cols-[repeat(auto-fit,minmax(112px,1fr))] gap-2.5">
-    <div class="grid content-start gap-1 rounded-md border border-trait px-3 py-2.5 [&_b]:text-[22px] [&_b]:leading-tight [&_b]:tabular-nums [&_small]:text-xs [&_small]:text-encre-2"><span class="pastille bg-ok-doux text-ok">Admises</span><b>{bilan.lignes_admises}</b><small>{bilan.occurrences_admises} occurrences prévues</small></div>
-    <div class="grid content-start gap-1 rounded-md border border-trait px-3 py-2.5 [&_b]:text-[22px] [&_b]:leading-tight [&_b]:tabular-nums [&_small]:text-xs [&_small]:text-encre-2"><span class="pastille bg-neutre-doux text-encre-2">Refusées</span><b>{bilan.lignes_refusees}</b><small>NON</small></div>
-    <div class="grid content-start gap-1 rounded-md border border-trait px-3 py-2.5 [&_b]:text-[22px] [&_b]:leading-tight [&_b]:tabular-nums [&_small]:text-xs [&_small]:text-encre-2"><span class="pastille bg-alerte-doux text-alerte">Ignorées</span><b>{bilan.lignes_ignorees}</b><small>OUI non conforme</small></div>
-    <div class="grid content-start gap-1 rounded-md border border-trait px-3 py-2.5 [&_b]:text-[22px] [&_b]:leading-tight [&_b]:tabular-nums [&_small]:text-xs [&_small]:text-encre-2"><span class="pastille bg-neutre-doux text-encre-2">En attente</span><b>{bilan.lignes_en_attente}</b><small>sans OUI ni NON</small></div>
-    <div class="grid content-start gap-1 rounded-md border border-trait px-3 py-2.5 [&_b]:text-[22px] [&_b]:leading-tight [&_b]:tabular-nums [&_small]:text-xs [&_small]:text-encre-2"><span class="pastille bg-neutre-doux text-encre-2">Sans décision</span><b>{bilan.propositions_sans_decision}</b><small>propositions absentes du classeur</small></div>
+  <div
+    class="grid grid-cols-[repeat(auto-fit,minmax(112px,1fr))] gap-2.5
+      [&>div]:grid [&>div]:content-start [&>div]:gap-1 [&>div]:rounded-md [&>div]:border [&>div]:border-trait [&>div]:px-3 [&>div]:py-2.5
+      [&_b]:text-[22px] [&_b]:leading-tight [&_b]:tabular-nums [&_small]:text-xs [&_small]:text-encre-2"
+  >
+    <div><Pastille couleur="ok">Admises</Pastille><b>{bilan.lignes_admises}</b><small>{bilan.occurrences_admises} occurrences prévues</small></div>
+    <div><Pastille>Refusées</Pastille><b>{bilan.lignes_refusees}</b><small>NON</small></div>
+    <div><Pastille couleur="alerte">Ignorées</Pastille><b>{bilan.lignes_ignorees}</b><small>OUI non conforme</small></div>
+    <div><Pastille>En attente</Pastille><b>{bilan.lignes_en_attente}</b><small>sans OUI ni NON</small></div>
+    <div><Pastille>Sans décision</Pastille><b>{bilan.propositions_sans_decision}</b><small>propositions absentes du classeur</small></div>
   </div>
 
   {#if bilan.lignes_a_examiner.length > 0}
-    <div class="tableau">
-      <table>
-        <caption class="text-xs text-encre-2">Lignes non admises : elles ne seront pas appliquées.</caption>
-        <thead>
-          <tr><th scope="col" class="text-right">Ligne</th><th scope="col">Nom actuel</th><th scope="col">Nouveau nom</th><th scope="col">Résultat</th><th scope="col">Motif</th></tr>
-        </thead>
-        <tbody>
-          {#each bilan.lignes_a_examiner as ligne}
-            <tr>
-              <td class="text-right tabular-nums">{ligne.ligne}</td>
-              <td class="whitespace-pre-wrap">{ligne.nom_actuel}</td>
-              <td class="font-semibold whitespace-pre-wrap">{ligne.nouveau_nom}</td>
-              <td><span class={ligne.resultat === "IGNORÉE" ? PASTILLES.alerte : PASTILLES.neutre}>{ligne.resultat}</span></td>
-              <td>{ligne.motif}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+    <Tableau legende="Lignes non admises : elles ne seront pas appliquées.">
+      <thead>
+        <tr>
+          <th scope="col" class="text-right">Ligne</th>
+          <th scope="col">Nom actuel</th>
+          <th scope="col">Nouveau nom</th>
+          <th scope="col">Résultat</th>
+          <th scope="col">Motif</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each bilan.lignes_a_examiner as ligne}
+          <tr>
+            <td class="text-right tabular-nums">{ligne.ligne}</td>
+            <td class="whitespace-pre-wrap">{ligne.nom_actuel}</td>
+            <td class="font-semibold whitespace-pre-wrap">{ligne.nouveau_nom}</td>
+            <td><Pastille couleur={ligne.resultat === "IGNORÉE" ? "alerte" : "neutre"}>{ligne.resultat}</Pastille></td>
+            <td>{ligne.motif}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </Tableau>
   {/if}
 
   {#if bilan.statut === "ControleBloquant"}
@@ -105,9 +114,9 @@
   {/if}
 
   <div class="flex flex-wrap items-center gap-2">
-    <button class="bouton bouton-principal" type="button" disabled={occupe || !generationPossible} onclick={generer}>Générer le SGX modifié</button>
-    <button class="bouton" type="button" disabled={occupe} onclick={() => executer("Ouverture du rapport", () => moteur.ouvrirFichier(etat.fichier_controle))}>
+    <Bouton principal disabled={occupe || !generationPossible} onclick={generer}>Générer le SGX modifié</Bouton>
+    <Bouton disabled={occupe} onclick={() => executer("Ouverture du rapport", () => moteur.ouvrirFichier(etat.fichier_controle))}>
       Ouvrir le rapport de contrôle
-    </button>
+    </Bouton>
   </div>
 {/if}

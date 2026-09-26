@@ -1,8 +1,11 @@
 <script>
   import * as moteur from "../moteur.js";
-  import { dateHeure, pastilleDuStatut, STATUTS } from "../format.js";
+  import { dateHeure, STATUTS } from "../format.js";
+  import Bouton from "./Bouton.svelte";
+  import Chiffre from "./Chiffre.svelte";
   import Fichier from "./Fichier.svelte";
   import Message from "./Message.svelte";
+  import Pastille from "./Pastille.svelte";
 
   let { etat, executer, naviguer, occupe } = $props();
 
@@ -39,31 +42,31 @@
   {/if}
   <Fichier type="SGX" chemin={courante.sgx}>
     {#if courante.etat_sgx === "Disponible"}
-      <button class="bouton" type="button" disabled={occupe} onclick={() => executer("Enregistrement de la copie", () => moteur.enregistrerCopie(courante.sgx))}>
+      <Bouton disabled={occupe} onclick={() => executer("Enregistrement de la copie", () => moteur.enregistrerCopie(courante.sgx))}>
         Enregistrer une copie
-      </button>
+      </Bouton>
     {/if}
   </Fichier>
-  <div class="chiffres">
-    <div class="chiffre"><b>{courante.modeles_modifies}</b><span>modèles modifiés</span></div>
-    <div class="chiffre"><b>{courante.occurrences_modifiees}</b><span>occurrences renommées</span></div>
-    <div class="chiffre"><b>{dateHeure(courante.horodatage)}</b><span>tentative {courante.numero}</span></div>
+  <div class="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
+    <Chiffre valeur={courante.modeles_modifies} libelle="modèles modifiés" />
+    <Chiffre valeur={courante.occurrences_modifiees} libelle="occurrences renommées" />
+    <Chiffre valeur={dateHeure(courante.horodatage)} libelle="tentative {courante.numero}" />
   </div>
   <div class="flex flex-wrap items-center gap-2">
-    <button class="bouton bouton-principal" type="button" disabled={occupe || courante.etat_sgx === "Absent"} onclick={() => executer("Ouverture du dossier", () => moteur.afficherDansDossier(courante.sgx))}>
+    <Bouton principal disabled={occupe || courante.etat_sgx === "Absent"} onclick={() => executer("Ouverture du dossier", () => moteur.afficherDansDossier(courante.sgx))}>
       Afficher le SGX dans le dossier
-    </button>
-    <button class="bouton" type="button" disabled={occupe} onclick={() => executer("Ouverture du rapport", () => moteur.ouvrirFichier(rapport(courante)))}>
+    </Bouton>
+    <Bouton disabled={occupe} onclick={() => executer("Ouverture du rapport", () => moteur.ouvrirFichier(rapport(courante)))}>
       Ouvrir le rapport de contrôle
-    </button>
+    </Bouton>
   </div>
   <Message type="info" etiquette="Étape suivante" titre="Importez ce fichier dans un emplacement Signavio de test et vérifiez les modèles concernés avant tout import en production." />
 {:else if courante}
   <Message type="alerte" etiquette="Aucun SGX" titre="Aucun nouveau SGX n'a été créé : {CAUSES[courante.statut] ?? STATUTS[courante.statut]?.libelle}">
-    <button class="bouton" type="button" onclick={() => naviguer("decisions")}>Revenir aux décisions</button>
-    <button class="bouton" type="button" disabled={occupe} onclick={() => executer("Ouverture du rapport", () => moteur.ouvrirFichier(rapport(courante)))}>
+    <Bouton onclick={() => naviguer("decisions")}>Revenir aux décisions</Bouton>
+    <Bouton disabled={occupe} onclick={() => executer("Ouverture du rapport", () => moteur.ouvrirFichier(rapport(courante)))}>
       Ouvrir le rapport de contrôle
-    </button>
+    </Bouton>
   </Message>
 {:else}
   <p>Aucun résultat pour les correspondances et décisions actuellement lues.</p>
@@ -77,7 +80,7 @@
       <div class="grid gap-1 border-t border-trait pt-2.5 text-[13px]">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <strong>Tentative {tentative.numero} · {dateHeure(tentative.horodatage)}</strong>
-          <span class={pastilleDuStatut(tentative.statut)}>{STATUTS[tentative.statut]?.libelle ?? tentative.statut}</span>
+          <Pastille couleur={STATUTS[tentative.statut]?.couleur}>{STATUTS[tentative.statut]?.libelle ?? tentative.statut}</Pastille>
         </div>
         {#if tentative.sgx}
           <span class="text-xs text-encre-2">{tentative.sgx}{tentative.etat_sgx !== "Disponible" ? ` — ${ETATS_FICHIER[tentative.etat_sgx]}` : ""}</span>

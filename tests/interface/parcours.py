@@ -109,15 +109,15 @@ def cliquer(texte):
     attente.until(essayer)
 
 
-def aller_a_l_etape(libelle):
-    selecteur = f"//nav//button[.//span[contains(concat(' ', @class, ' '), ' libelle ') and text()=\"{libelle}\"]]"
-    attente.until(lambda _: fenetre.find_element(By.XPATH, selecteur).click() or True)
+def aller_a_l_etape(etape):
+    selecteur = f"nav button[data-etape='{etape}']"
+    attente.until(lambda _: fenetre.find_element(By.CSS_SELECTOR, selecteur).click() or True)
 
 
 def attendre_titre(titre):
     attente.until(lambda _: fenetre.find_element(By.TAG_NAME, "h1").text == titre)
     # Pas d'action en cours : la zone d'annonce est vide.
-    attente.until(lambda _: not fenetre.find_elements(By.CSS_SELECTOR, ".occupe"))
+    attente.until(lambda _: not fenetre.find_elements(By.CSS_SELECTOR, "#action-en-cours span"))
 
 
 def attendre_texte(texte):
@@ -169,7 +169,7 @@ try:
     # Source
     attendre_titre("Source")
     verifier(fenetre.switch_to.active_element.tag_name == "h1", "le focus est placé sur le titre de l'étape")
-    chiffres = [element.text for element in fenetre.find_elements(By.CSS_SELECTOR, ".chiffre b")]
+    chiffres = [element.text for element in fenetre.find_elements(By.CSS_SELECTOR, "[data-chiffre]")]
     verifier(chiffres == ["2", "4", "2"], f"inventaire : 2 modèles, 4 occurrences, 2 noms ({chiffres})")
     verifier(dossier.joinpath("traitement.json").exists(), "dossier de traitement créé")
     capture("source")
@@ -217,6 +217,15 @@ try:
     verifier("Validation « À VOIR » non reconnue" in fenetre.find_element(By.TAG_NAME, "main").text, "motif de la ligne en attente affiché")
     capture("decisions-controlees")
 
+    # Thème sombre : bascule, capture, puis retour au thème clair.
+    theme = lambda: fenetre.execute_script("return document.documentElement.dataset.theme")
+    theme_initial = theme()
+    cliquer("Thème sombre")
+    verifier(theme() == "dark" and bouton("Thème sombre").get_attribute("aria-pressed") == "true", "bascule vers le thème sombre")
+    capture("decisions-theme-sombre")
+    cliquer("Thème sombre")
+    verifier(theme() == "light" and theme_initial == "light", "retour au thème clair")
+
     # Double clic sur « Générer » : une seule tentative.
     generer = bouton("Générer le SGX modifié")
     fenetre.execute_script("arguments[0].click(); arguments[0].click();", generer)
@@ -234,7 +243,7 @@ try:
     classeur["Analyse"].cell(3, 5).value = "OUI"
     classeur.save(edition_decisions)
     fenetre.execute_script("window.dispatchEvent(new Event('focus'))")
-    aller_a_l_etape("Décisions")
+    aller_a_l_etape("decisions")
     attendre_texte("Ce classeur a changé depuis sa dernière lecture")
     etape = fenetre.find_element(By.XPATH, "//nav//button[@aria-current='step']").text
     verifier("à relire" in etape, f"l'étape signale le classeur à relire ({etape!r})")

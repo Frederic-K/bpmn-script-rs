@@ -29,7 +29,8 @@ La procédure et le tableau à remplir sont dans [docs/m6-qualification.md](docs
 |---|---|---|
 | P01 à P07 | Toutes adoptées | Propriétaire : « tu peux tout approuver sur la partie dev » |
 | Interface | Svelte 5 en JavaScript, sans TypeScript, sans store ni mémoïsation | Consigne du propriétaire |
-| Styles | Tailwind CSS v4 (4.3.3, plugin Vite), à la place d'un fichier CSS classique ; rendu identique à la maquette validée | Demande du propriétaire, après M6 |
+| Styles | Tailwind CSS v4 (4.3.3, plugin Vite), à la place d'un fichier CSS classique ; rendu identique à la maquette validée ; éléments répétés en composants (`Bouton`, `Pastille`, `Chiffre`, `Tableau`) plutôt qu'en `@apply` | Demande du propriétaire, après M6 |
+| Thème | Bascule clair/sombre dans la barre du haut, mémorisée ; thème du système au premier lancement | Demande du propriétaire, après M6 |
 | Maquette | Validée avant le développement de M5 | Propriétaire |
 | Rust | 1.88 → 1.89, pour `File::try_lock` (verrou système libéré même en cas d'arrêt brutal) | M4 |
 | Dépendances ajoutées | `sha2` (empreintes) ; Tauri 2 et ses deux plugins ; Svelte, Vite, @tauri-apps/api | M4, M5 |

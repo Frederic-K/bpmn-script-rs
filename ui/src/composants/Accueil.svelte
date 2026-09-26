@@ -1,5 +1,6 @@
 <script>
   import * as moteur from "../moteur.js";
+  import Bouton from "./Bouton.svelte";
   import Fichier from "./Fichier.svelte";
 
   let { executer, naviguerSelonEtape, occupe } = $props();
@@ -47,28 +48,20 @@
     </p>
     {#if source}
       <Fichier type="SGX" chemin={source}>
-        <button class="bouton" type="button" disabled={occupe} onclick={choisirSource}>Changer</button>
+        <Bouton disabled={occupe} onclick={choisirSource}>Changer</Bouton>
       </Fichier>
     {:else}
-      <div class="flex flex-wrap items-center gap-2">
-        <button class="bouton" type="button" disabled={occupe} onclick={choisirSource}>Choisir le fichier SGX</button>
-      </div>
+      <div><Bouton disabled={occupe} onclick={choisirSource}>Choisir le fichier SGX</Bouton></div>
     {/if}
     {#if dossierParent}
       <Fichier type="DOSSIER" chemin={dossierParent}>
-        <button class="bouton" type="button" disabled={occupe} onclick={choisirDossierParent}>Changer</button>
+        <Bouton disabled={occupe} onclick={choisirDossierParent}>Changer</Bouton>
       </Fichier>
     {:else}
-      <div class="flex flex-wrap items-center gap-2">
-        <button class="bouton" type="button" disabled={occupe} onclick={choisirDossierParent}>
-          Choisir le dossier des traitements
-        </button>
-      </div>
+      <div><Bouton disabled={occupe} onclick={choisirDossierParent}>Choisir le dossier des traitements</Bouton></div>
     {/if}
-    <div class="flex flex-wrap items-center gap-2">
-      <button class="bouton bouton-principal" type="button" disabled={occupe || !source || !dossierParent} onclick={creer}>
-        Inventorier les lanes
-      </button>
+    <div>
+      <Bouton principal disabled={occupe || !source || !dossierParent} onclick={creer}>Inventorier les lanes</Bouton>
     </div>
   </section>
 
@@ -78,8 +71,6 @@
       Ouvrez le dossier d'un traitement existant. Son état est vérifié : copie de la source, classeurs lus et
       résultats.
     </p>
-    <div class="flex flex-wrap items-center gap-2">
-      <button class="bouton" type="button" disabled={occupe} onclick={reprendre}>Ouvrir un dossier de traitement</button>
-    </div>
+    <div><Bouton disabled={occupe} onclick={reprendre}>Ouvrir un dossier de traitement</Bouton></div>
   </section>
 </div>
