@@ -602,3 +602,268 @@ fn nom(chemin: &Path) -> String {
         .to_string_lossy()
         .into_owned()
 }
+
+// ---------------------------------------------------------------- Tests
+
+/// Tests de caractérisation (lot M1) : ils figent le comportement actuel,
+/// défauts compris. Un test marqué « caractérisation : défaut connu » décrit
+/// un comportement à revoir en M3, pas une attente V1.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn lane(nom: Value, enfants: Vec<Value>) -> Value {
+        json!({"stencil": {"id": "Lane"}, "properties": {"name": nom}, "childShapes": enfants})
+    }
+
+    fn tache(nom: &str) -> Value {
+        json!({"stencil": {"id": "Task"}, "properties": {"name": nom}, "childShapes": []})
+    }
+
+    fn lanes_de(modele: &Value) -> Vec<String> {
+        let mut lanes = Vec::new();
+        trouver_lanes(modele, &mut lanes);
+        lanes
+    }
+
+    fn occ(fichier_modele: &str, flux: &str, lane: &str) -> Occurrence {
+        Occurrence {
+            fichier_modele: fichier_modele.into(),
+            flux: flux.into(),
+            lane: lane.into(),
+        }
+    }
+
+    // --- Inventaire (R03)
+
+    #[test]
+    fn inventaire_lanes_imbriquees_nettoyees_et_doublons_conserves() {
+        let modele = json!({"childShapes": [
+            lane(json!(" A "), vec![lane(json!("A"), vec![]), tache("A")]),
+            lane(json!("B"), vec![]),
+            lane(json!(""), vec![]),
+            lane(json!("   "), vec![]),
+        ]});
+        assert_eq!(lanes_de(&modele), ["A", "A", "B"]);
+    }
+
+    #[test]
+    fn inventaire_espaces_internes_non_nettoyes() {
+        let modele = json!({"childShapes": [lane(json!(" A  B\nC "), vec![])]});
+        assert_eq!(lanes_de(&modele), ["A  B\nC"]);
+    }
+
+    #[test]
+    fn inventaire_ignore_les_formes_non_lane_homonymes() {
+        let modele = json!({"childShapes": [tache("A"), json!({"stencil": {"id": "Pool"},
+            "properties": {"name": "A"}, "childShapes": [lane(json!("L"), vec![])]})]});
+        assert_eq!(lanes_de(&modele), ["L"]);
+    }
+
+    #[test]
+    fn inventaire_nom_non_textuel_ignore_silencieusement() {
+        // caractérisation : défaut connu, voir P03 (anomalie non signalée).
+        let modele = json!({"childShapes": [
+            lane(Value::Null, vec![lane(json!("Enfant"), vec![])]),
+            lane(json!(123), vec![]),
+            json!({"stencil": {"id": "Lane"}, "childShapes": []}),
+        ]});
+        assert_eq!(lanes_de(&modele), ["Enfant"]);
+    }
+
+    #[test]
+    fn inventaire_child_shapes_mal_type_ignore_silencieusement() {
+        // caractérisation : défaut connu, voir P03 (enfants non parcourus sans diagnostic).
+        assert!(lanes_de(&json!({"childShapes": 7})).is_empty());
+        let modele = json!({"childShapes": [
+            json!({"stencil": {"id": "Lane"}, "properties": {"name": "A"}, "childShapes": {"x": 1}}),
+        ]});
+        assert_eq!(lanes_de(&modele), ["A"]);
+    }
+
+    // --- Renommage (R09)
+
+    #[test]
+    fn renommage_compte_les_occurrences_imbriquees_apres_trim() {
+        let mut modele = json!({"childShapes": [
+            lane(json!(" A "), vec![lane(json!("A"), vec![]), tache("A")]),
+            lane(json!("B"), vec![]),
+        ]});
+        assert_eq!(renommer_lanes(&mut modele, "A", "Z"), 2);
+        assert_eq!(modele["childShapes"][0]["properties"]["name"], "Z");
+        assert_eq!(
+            modele["childShapes"][0]["childShapes"][0]["properties"]["name"],
+            "Z"
+        );
+        assert_eq!(
+            modele["childShapes"][0]["childShapes"][1]["properties"]["name"],
+            "A"
+        );
+        assert_eq!(modele["childShapes"][1]["properties"]["name"], "B");
+    }
+
+    #[test]
+    fn renommage_sans_correspondance_ne_modifie_rien() {
+        let mut modele = json!({"childShapes": [lane(json!("A"), vec![])]});
+        let avant = modele.clone();
+        assert_eq!(renommer_lanes(&mut modele, "X", "Z"), 0);
+        assert_eq!(modele, avant);
+    }
+
+    #[test]
+    fn renommage_preserve_les_proprietes_inconnues() {
+        let mut modele = json!({"inconnu": {"k": [1, 2]}, "childShapes": [
+            {"stencil": {"id": "Lane"}, "resourceId": "r1",
+             "properties": {"name": "A", "autre": true}, "childShapes": []}
+        ]});
+        renommer_lanes(&mut modele, "A", "Z");
+        assert_eq!(
+            modele,
+            json!({"inconnu": {"k": [1, 2]}, "childShapes": [
+                {"stencil": {"id": "Lane"}, "resourceId": "r1",
+                 "properties": {"name": "Z", "autre": true}, "childShapes": []}
+            ]})
+        );
+    }
+
+    #[test]
+    fn renommages_sequentiels_en_chaine() {
+        let mut modele =
+            json!({"childShapes": [lane(json!("A"), vec![]), lane(json!("B"), vec![])]});
+        assert_eq!(renommer_lanes(&mut modele, "A", "B"), 1);
+        // La deuxième opération voit le résultat de la première (R09).
+        assert_eq!(renommer_lanes(&mut modele, "B", "C"), 2);
+    }
+
+    // --- Synthèse (R02, R05)
+
+    #[test]
+    fn synthese_distingue_les_modeles_homonymes_par_chemin() {
+        let resultats = [
+            occ("a/model_1_.json", "Flux", "A"),
+            occ("a/model_1_.json", "Flux", "A"),
+            occ("b/model_1_.json", "Flux", "A"),
+            occ("a/model_1_.json", "Flux", "B"),
+        ];
+        let synthese = synthetiser(&resultats);
+        assert_eq!(synthese.keys().collect::<Vec<_>>(), ["A", "B"]);
+        let a = &synthese["A"];
+        assert_eq!(a.occurrences, 3);
+        let par_modele: Vec<_> = a
+            .occurrences_par_modele
+            .iter()
+            .map(|(chemin, pm)| (chemin.as_str(), pm.flux.as_str(), pm.occurrences))
+            .collect();
+        assert_eq!(
+            par_modele,
+            [
+                ("a/model_1_.json", "Flux", 2),
+                ("b/model_1_.json", "Flux", 1)
+            ]
+        );
+    }
+
+    #[test]
+    fn synthese_nombre_de_flux_compte_les_noms_distincts() {
+        // Deux modèles distincts portant le même nom de flux : un seul flux compté (R05).
+        let resultats = [
+            occ("a/model_1_.json", "Flux", "A"),
+            occ("b/model_1_.json", "Flux", "A"),
+        ];
+        let synthese = synthetiser(&resultats);
+        assert_eq!(synthese["A"].flux, ["Flux"]);
+        assert_eq!(synthese["A"].occurrences_par_flux["Flux"], 2);
+        assert_eq!(synthese["A"].occurrences_par_modele.len(), 2);
+    }
+
+    // --- Dry-run (R04, R05)
+
+    #[test]
+    fn dry_run_une_proposition_par_modele_et_nom() {
+        let synthese = synthetiser(&[
+            occ("a/model_1_.json", "Flux", "A"),
+            occ("a/model_1_.json", "Flux", "A"),
+            occ("b/model_1_.json", "Flux", "A"),
+            occ("a/model_1_.json", "Flux", "B"),
+        ]);
+        let correspondances: IndexMap<String, String> = [("X", "Y"), ("B", "C"), ("A", "Z")]
+            .into_iter()
+            .map(|(a, n)| (a.to_string(), n.to_string()))
+            .collect();
+        let analyse = dry_run(&correspondances, &synthese);
+        let lignes: Vec<_> = analyse
+            .iter()
+            .map(|m| {
+                (
+                    m.fichier_modele.as_str(),
+                    m.nom_actuel.as_str(),
+                    m.nouveau_nom.as_str(),
+                    m.occurrences,
+                )
+            })
+            .collect();
+        assert_eq!(
+            lignes,
+            [
+                ("a/model_1_.json", "B", "C", 1),
+                ("a/model_1_.json", "A", "Z", 2),
+                ("b/model_1_.json", "A", "Z", 1),
+            ]
+        );
+    }
+
+    #[test]
+    fn dry_run_vide_si_aucun_ancien_nom_connu() {
+        let synthese = synthetiser(&[occ("a/model_1_.json", "Flux", "A")]);
+        let correspondances = IndexMap::from([("X".to_string(), "Y".to_string())]);
+        assert!(dry_run(&correspondances, &synthese).is_empty());
+    }
+
+    // --- Relecture des décisions (R07, P02)
+
+    #[test]
+    fn proposition_incomplete_si_un_champ_manque() {
+        let complete = || Ligne {
+            fichier_modele: Some("a".into()),
+            flux: Some("f".into()),
+            nom_actuel: Some("A".into()),
+            nouveau_nom: Some("Z".into()),
+            occurrences: Some(1),
+        };
+        assert!(complete().proposition().is_some());
+        let variantes: [fn(&mut Ligne); 5] = [
+            |l| l.fichier_modele = None,
+            |l| l.flux = None,
+            |l| l.nom_actuel = None,
+            |l| l.nouveau_nom = None,
+            |l| l.occurrences = None,
+        ];
+        for retirer in variantes {
+            let mut ligne = complete();
+            retirer(&mut ligne);
+            assert!(ligne.proposition().is_none());
+        }
+    }
+
+    #[test]
+    fn texte_convertit_toute_cellule_non_vide() {
+        // caractérisation : défaut connu, voir P02 (coercition silencieuse des types).
+        assert_eq!(texte(&Data::Empty), None);
+        assert_eq!(texte(&Data::String(" a ".into())).as_deref(), Some(" a "));
+        assert_eq!(texte(&Data::Int(123)).as_deref(), Some("123"));
+        assert_eq!(texte(&Data::Float(123.0)).as_deref(), Some("123"));
+        assert_eq!(texte(&Data::Bool(true)).as_deref(), Some("true"));
+    }
+
+    #[test]
+    fn entier_accepte_les_nombres_entiers_non_negatifs() {
+        assert_eq!(entier(&Data::Int(2)), Some(2));
+        assert_eq!(entier(&Data::Float(2.0)), Some(2));
+        assert_eq!(entier(&Data::Float(2.5)), None);
+        assert_eq!(entier(&Data::Float(-1.0)), None);
+        assert_eq!(entier(&Data::Int(-1)), None);
+        assert_eq!(entier(&Data::String("2".into())), None);
+        assert_eq!(entier(&Data::Bool(true)), None);
+        assert_eq!(entier(&Data::Empty), None);
+    }
+}
