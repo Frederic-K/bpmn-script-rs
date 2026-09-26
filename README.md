@@ -8,8 +8,15 @@ Objectif : comparer une réécriture Rust simple (KISS, YAGNI) avec le script Py
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/main.rs` | Tout le programme (un seul fichier, comme `main.py`) |
+| `src/main.rs` | CLI historique : lance le workflow sur `input/`, `work/`, `output/` du dossier courant |
+| `src/lib.rs` | Bibliothèque : point d'entrée `executer(&Chemins, journal)` avec dossiers explicites |
+| `src/workflow.rs` | Enchaînement des étapes, écriture des JSON |
+| `src/regles.rs` | Règles métier en mémoire (inventaire, synthèse, dry-run, contrôle, test des renommages) |
+| `src/sgx.rs` | Lecture et écriture de l'archive SGX |
+| `src/excel.rs` | Lecture des Excel de saisie, écriture des Excel produits |
+| `tests/` | Tests d'intégration (`cargo test`) |
 | `Cargo.toml` | Dépendances |
+| `rust-toolchain.toml` | Version de Rust (1.88.0) |
 
 Dépendances, une par besoin :
 
@@ -27,6 +34,7 @@ Prérequis : Rust installé (`rustup`).
 
 ```powershell
 cargo build --release
+cargo test
 ```
 
 Binaire produit : `target\release\bpmn-script-rs.exe`.
@@ -90,4 +98,4 @@ Ces écarts ne modifient ni les décisions humaines, ni les contrôles, ni le co
 
 ## Hors périmètre
 
-Volontairement non ajouté : arguments en ligne de commande, configuration, journalisation, tests automatisés, découpage en modules. Le programme reste un script linéaire, comme l'original.
+Volontairement non ajouté : arguments en ligne de commande, configuration, journalisation. Le CLI garde le comportement de l'original ; le découpage en modules (lot M2) ne change ni les fichiers produits ni les messages. Voir `docs/`.
