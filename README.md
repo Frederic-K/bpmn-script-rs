@@ -54,21 +54,26 @@ Export SGX
 
 ## Comparaison avec la version Python
 
-Contrôle réalisé sur un SGX de test, avec les mêmes saisies humaines pour les deux versions :
+Contrôle réalisé sur un SGX de test synthétique, puis sur un export Signavio réel (SAPHIR, 241 modèles, 848 swimlanes, 289 noms uniques), avec les mêmes saisies humaines pour les deux versions :
 
 - messages console identiques aux 3 lancements ;
 - fichiers JSON identiques octet pour octet ;
 - Excel identiques (valeurs, largeurs, volet figé, filtre, liste OUI/NON, surlignage) ;
 - SGX modifié identique après lecture (mêmes entrées, même compression, mêmes JSON) ;
-- cas testés : renommage validé, refus (`NON`), ligne falsifiée (`IGNORÉE`), renommages en chaîne (test en mémoire non conforme, pas de SGX produit).
+- cas testés : renommage validé, refus (`NON`), ligne falsifiée (`IGNORÉE`), renommages en chaîne (test en mémoire non conforme, pas de SGX produit) ;
+- export réel : renommage des 13 swimlanes dont le nom contient un retour à la ligne ou un double espace, sans écart ;
+- SGX produit : archive valide, 630 entrées dans le même ordre que la source.
 
 | Critère | Python | Rust |
 | --- | --- | --- |
 | Lignes de code | 716 | environ 600 (après `cargo fmt`) |
 | Installation poste | Python + venv + `pip install` | Aucune : un `.exe` autonome |
-| Temps (SGX de test, 2 000 modèles) | 1,5 s | 0,9 s |
+| Temps, export réel (241 modèles, 3e lancement complet) | 0,7 s | 0,17 s |
+| Temps, SGX synthétique (2 000 modèles, inventaire) | 1,5 s | 0,9 s |
 
-Le gain de temps reste modeste : le parsing JSON Python est déjà écrit en C. L'intérêt principal est le binaire unique à distribuer.
+Sur un export réel, l'écart vient surtout du démarrage de Python et du chargement d'openpyxl. Sur un gros volume, il se réduit : le parsing JSON Python est déjà écrit en C. L'intérêt principal reste le binaire unique à distribuer.
+
+Point restant à vérifier : l'import dans Signavio d'un SGX produit par la version Rust (dossier de test). Les en-têtes ZIP diffèrent légèrement de la version Python (voir ci-dessous) ; le contenu des modèles est identique.
 
 ## Écarts assumés
 
@@ -76,7 +81,8 @@ Le gain de temps reste modeste : le parsing JSON Python est déjà écrit en C. 
 | --- | --- | --- |
 | Dossier `output/` absent | Erreur | Créé automatiquement |
 | Erreur bloquante | Trace Python | Message `[ERREUR] ...` et code retour 1 |
-| Entrées SGX non modifiées | Recompressées | Copiées telles quelles (octets d'origine) |
+| Entrées SGX non modifiées | Recompressées | Données compressées d'origine recopiées sans recompression |
+| En-têtes ZIP | Système « DOS » conservé | Système « Unix », droits de lecture standard (0644) |
 | JSON des modèles modifiés | Séparateurs `, ` et `: ` | Format compact (contenu identique) |
 | Cellule numérique dans une colonne texte | Lue comme nombre | Lue comme texte |
 
