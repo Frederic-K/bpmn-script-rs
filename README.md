@@ -4,6 +4,8 @@ Portage Rust de [bpmn-script](https://github.com/Frederic-K/bpmn-script), versio
 
 Objectif : comparer une réécriture Rust simple (KISS, YAGNI) avec le script Python d'origine. Le workflow, les dossiers et les fichiers produits sont identiques.
 
+Consignes pour les agents : [AGENTS.md](AGENTS.md). État du projet et guide de revue : [SESSION.md](SESSION.md).
+
 ## Contenu
 
 | Fichier | Rôle |
