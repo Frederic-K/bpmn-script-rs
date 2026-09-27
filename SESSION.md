@@ -92,6 +92,8 @@ Constats de ma propre relecture, corrigés au passage :
 | Point 3 : contradiction absente du rapport Excel | Lignes `CONTRADICTOIRE`, motif avec la ligne opposée ; proposition ni admise ni refusée | Tests unitaire et CLI ; bout en bout |
 | Point 4 : nom de la copie à transmettre | Nom proposé `validation_<traitement>.xlsx` (seul le nom suggéré change) | — |
 
+Ensuite, à la demande du propriétaire : bouton « Enregistrer une copie » aussi à l'étape Correspondances (classeur tel qu'il est, nom proposé `correspondances_<traitement>.xlsx`). Libellés harmonisés, car la copie ne sert pas qu'à transmettre (réunion, arbitrage) : « Enregistrer une copie » aux trois étapes, « Importer un classeur de correspondances / de décision », voie « Je fais valider ailleurs (autre personne, réunion…) ».
+
 Non retenu, comme recommandé : blocage des doublons de correspondances à cibles différentes (point 7, décision métier à prendre, attentes V1 à faire évoluer).
 
 Documenté pour l'opérateur et le propriétaire : [docs/guide.md](docs/guide.md) (fichiers du traitement, garanties, correspondance code / Python) ; essais Excel réels à faire sous Windows : `docs/m6-qualification.md`, étape 6.

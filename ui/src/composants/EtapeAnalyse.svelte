@@ -7,7 +7,7 @@
 
   // Aperçu en lecture seule. Le classeur d'analyse n'est pas proposé à
   // l'ouverture : sa colonne Validation serait confondue avec le classeur de
-  // décision. La copie à transmettre se fait depuis l'étape Décisions.
+  // décision. Sa copie sans réponse s'enregistre depuis l'étape Décisions.
   let { etat, naviguer, occupe } = $props();
   const texte = textes.analyse;
 

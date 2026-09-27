@@ -106,6 +106,12 @@ export const textes = {
     nomsEnDoublon: "Ces noms sont renseignés plusieurs fois ; seule la dernière ligne est retenue. Vérifiez que c'est voulu :",
     lire: "Lire les correspondances",
     relire: "Relire les correspondances",
+    copier: "Enregistrer une copie",
+    nomCopie: (traitement) => `correspondances_${traitement}.xlsx`,
+    copieSansEcrasement:
+      "« Enregistrer une copie » : le classeur tel qu'il est, à l'emplacement de votre choix. Choisissez un nouveau nom : aucun fichier existant n'est remplacé.",
+    etiquetteCopie: "Copie",
+    copieEnregistree: (chemin) => `Copie enregistrée : ${chemin}`,
     importer: "Importer un classeur de correspondances",
     importerExplication:
       "Un classeur importé remplace les correspondances lues et devient le classeur du traitement ; l'analyse et les décisions seront à refaire.",
@@ -150,17 +156,17 @@ export const textes = {
       "Ouvrez le classeur de décision et renseignez uniquement la colonne Validation (OUI ou NON). Enregistrez et fermez Excel, puis lisez le classeur.",
     ouvrir: "Ouvrir le classeur de décision",
     lire: "Lire le classeur de décision",
-    externeTitre: "Je fais valider par une autre personne",
+    externeTitre: "Je fais valider ailleurs (autre personne, réunion…)",
     externeConsigne:
-      "Enregistrez une copie à transmettre. Le valideur renseigne uniquement la colonne Validation, sans modifier les autres colonnes.",
-    copier: "Enregistrer une copie à transmettre",
+      "Enregistrez une copie : elle contient les propositions, sans aucune réponse. Seule la colonne Validation doit y être remplie, sans modifier les autres colonnes.",
+    copier: "Enregistrer une copie",
     nomCopie: (traitement) => `validation_${traitement}.xlsx`,
     copieSansEcrasement: "Choisissez un nouveau nom : aucun fichier existant n'est remplacé.",
     etiquetteCopie: "Copie",
     copieEnregistree: (chemin) => `Copie enregistrée : ${chemin}`,
     importerConsigne:
-      "À son retour, importez le fichier. Il remplace toutes les décisions lues jusqu'ici (aucune fusion) et devient le classeur de décision du traitement.",
-    importer: "Importer le retour du valideur",
+      "Une fois la copie remplie, importez-la. Elle remplace toutes les décisions lues jusqu'ici (aucune fusion) et devient le classeur de décision du traitement.",
+    importer: "Importer un classeur de décision",
     etiquetteUtilisees: "Utilisées",
     lecture: (date, fichier, classeurDuTraitement) =>
       classeurDuTraitement

@@ -14,6 +14,14 @@
   const aLire = $derived(!etat.correspondances_adoptees || etat.correspondances_a_relire);
 
   let lectureRefusee = $state(false);
+  let copie = $state(null);
+
+  async function enregistrerCopie() {
+    const destination = await executer(textes.actions.copie, () =>
+      moteur.enregistrerCopie(etat.edition_correspondances, texte.nomCopie(etat.nom)),
+    );
+    if (destination) copie = destination;
+  }
 
   async function lire(fichier = null) {
     const reponse = await executer(textes.actions.lectureCorrespondances, () => moteur.lireCorrespondances(etat.revision, fichier));
@@ -38,7 +46,12 @@
   <Bouton disabled={occupe} onclick={() => executer(textes.actions.ouvertureClasseur, () => moteur.ouvrirFichier(etat.edition_correspondances))}>
     {texte.ouvrir}
   </Bouton>
+  <Bouton disabled={occupe} onclick={enregistrerCopie}>{texte.copier}</Bouton>
 </Fichier>
+<p class="max-w-[72ch] text-xs text-encre-2">{texte.copieSansEcrasement}</p>
+{#if copie}
+  <Message type="ok" etiquette={texte.etiquetteCopie} titre={texte.copieEnregistree(copie)} />
+{/if}
 
 {#if etat.correspondances_adoptees && etat.correspondances_a_relire}
   <Message type="alerte" etiquette={texte.etiquetteARelire} titre={texte.aRelire} />

@@ -212,6 +212,7 @@ try:
     cliquer("Lire les correspondances")
     attendre_texte("2 nom(s) avec une demande de renommage ont été lus.")
     attendre_texte("« Achat »")
+    verifier(bouton("Enregistrer une copie").is_enabled(), "correspondances : copie du classeur proposée")
     # Revue D04 : l'analyse n'est pas accessible avant d'être préparée.
     verifier(not fenetre.find_element(By.CSS_SELECTOR, "nav button[data-etape='analyse']").is_enabled(), "analyse inaccessible avant sa préparation")
     capture("correspondances-lues")
@@ -229,7 +230,7 @@ try:
     # Décisions contradictoires (OUI puis NON sur la même proposition) : bloquant.
     cliquer("Passer aux décisions")
     attendre_titre("Décisions")
-    verifier(bouton("Enregistrer une copie à transmettre").is_enabled(), "voie « faire valider » proposée")
+    verifier(bouton("Enregistrer une copie").is_enabled(), "voie « faire valider ailleurs » proposée")
     edition_decisions = dossier / "edition" / "validation_modifications.xlsx"
     classeur = load_workbook(edition_decisions)
     feuille = classeur["Analyse"]
@@ -263,7 +264,7 @@ try:
     capture("decisions-controlees")
 
     # Import d'un retour au mauvais format : refusé, les décisions lues restent.
-    cliquer("Importer le retour du valideur")
+    cliquer("Importer un classeur de décision")
     remplir_dialogue("Choisir un classeur Excel", edition_correspondances)
     attendre_texte("Classeur non adopté. Les décisions lues le")
     verifier(bouton("Générer le SGX modifié").is_enabled(), "import refusé : décisions précédentes toujours utilisables")

@@ -38,7 +38,8 @@ Résultat de l'exécution : voir la section 4.
    - **Double ouverture :** une seconde instance ouverte sur le même traitement est refusée.
 6. **Parcours des classeurs avec Excel réel** (essais recommandés par la revue du parcours) :
    - **Validation locale :** « Ouvrir le classeur de décision », saisir OUI ou NON, enregistrer, fermer, « Lire le classeur de décision ». Le message « Décisions lues le … depuis le classeur de décision du traitement » apparaît.
-   - **Validation externe :** « Enregistrer une copie à transmettre » vers un nouveau nom, la remplir comme un valideur, puis « Importer le retour du valideur ». Avec les mêmes réponses, le résultat doit être identique à la validation locale. Le message indique le nom du fichier importé.
+   - **Validation externe :** aux Décisions, « Enregistrer une copie » vers un nouveau nom, la remplir comme un valideur, puis « Importer un classeur de décision ». Avec les mêmes réponses, le résultat doit être identique à la validation locale. Le message indique le nom du fichier importé.
+   - **Correspondances par copie :** aux Correspondances, « Enregistrer une copie », la modifier ailleurs, puis « Importer un classeur de correspondances ». Le message indique le nom du fichier importé.
    - **Copie sans écrasement :** « Enregistrer une copie » vers un fichier existant, en confirmant « Remplacer » dans le dialogue de Windows. La copie doit être refusée et le fichier existant intact.
    - **Retour remplacé :** importer un premier retour partiel, puis un second. Seul le second est utilisé ; les propositions absentes apparaissent en « Sans décision ».
    - **Import refusé :** importer un classeur au mauvais format (le classeur de correspondance, par exemple). Le message « Classeur non adopté. Les décisions lues le … restent utilisées » apparaît.
