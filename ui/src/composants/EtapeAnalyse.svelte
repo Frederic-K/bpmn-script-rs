@@ -62,7 +62,7 @@
               <td class="whitespace-pre-wrap">{proposition.nom_actuel}</td>
               <td class="font-semibold whitespace-pre-wrap">{proposition.nouveau_nom}</td>
               <td class="text-right tabular-nums">{proposition.occurrences}</td>
-              <td class="min-w-[220px] font-mono text-xs text-encre-2 [overflow-wrap:anywhere]">{proposition.fichier_modele}</td>
+              <td class="min-w-[220px] font-mono text-xs text-encre-2 wrap-anywhere">{proposition.fichier_modele}</td>
             </tr>
           {/each}
         </tbody>

@@ -12,7 +12,7 @@
 
 <span
   class="inline-flex items-center gap-1.5 justify-self-start rounded-full px-2.5 py-0.5 text-xs font-semibold
-    before:size-[7px] before:flex-none before:rounded-full before:bg-current before:content-['']
+    before:size-1.75 before:flex-none before:rounded-full before:bg-current before:content-['']
     {COULEURS[couleur]}"
 >
   {@render children()}

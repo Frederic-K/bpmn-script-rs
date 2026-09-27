@@ -91,7 +91,7 @@
   <header class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-trait bg-surface px-4 py-2.5">
     <span class="font-semibold">{textes.application.nom}</span>
     {#if etat}
-      <span class="text-encre-2 [overflow-wrap:anywhere]">· {etat.nom}</span>
+      <span class="text-encre-2 wrap-anywhere">· {etat.nom}</span>
     {/if}
     <span class="flex-1"></span>
     {#if etat}

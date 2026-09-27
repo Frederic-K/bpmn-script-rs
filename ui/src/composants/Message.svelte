@@ -20,7 +20,7 @@
   <div class="grid min-w-0 gap-1.5">
     <p class="max-w-[72ch]">{titre}</p>
     {#if details.length > 0}
-      <ul class="grid list-disc gap-0.5 pl-4.5 text-[13px] select-text [overflow-wrap:anywhere]">
+      <ul class="grid list-disc gap-0.5 pl-4.5 text-[13px] select-text wrap-anywhere">
         {#each details as detail}
           <li>{detail}</li>
         {/each}
