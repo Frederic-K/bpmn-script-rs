@@ -4,13 +4,11 @@
   import Bouton from "./Bouton.svelte";
   import Fichier from "./Fichier.svelte";
 
-  export let executer;
-  export let naviguerSelonEtape;
-  export let occupe;
+  let { executer, naviguerSelonEtape, occupe } = $props();
   const texte = textes.accueil;
 
-  let source = null;
-  let dossierParent = null;
+  let source = $state(null);
+  let dossierParent = $state(null);
 
   async function choisirSource() {
     const chemin = await executer(textes.actions.choixFichier, moteur.choisirSgx);
