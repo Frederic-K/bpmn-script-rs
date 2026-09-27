@@ -54,7 +54,7 @@ npm run tauri build                               # release + installateur NSIS 
 
 ## Outillage verrouillé
 
-- **Rust 1.89.0**, fixé par `rust-toolchain.toml` : minimum requis pour `File::try_lock`.
+- **Rust 1.89.0**, fixé par `rust-toolchain.toml` : minimum requis pour `File::try_lock`. Le composant `rust-analyzer` y figure pour que VS Code utilise la version accordée à cette toolchain (celle embarquée par l'extension est trop récente).
 - **Cargo** : `Cargo.lock` unique pour l'espace de travail (moteur et `src-tauri`). Construire avec `--locked` ; ne pas mettre à jour les dépendances par commodité.
 - **npm** : versions exactes dans `package.json`, verrouillées par `package-lock.json`. Installer avec `npm ci`.
 - **Fonctionnalités de dépendances volontaires** :
