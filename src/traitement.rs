@@ -9,7 +9,8 @@
 //   edition/precedents/    classeurs d'édition modifiés puis remplacés
 //   entrees/               instantanés adoptés, jamais modifiés
 //   analyse/               analyse des correspondances adoptées
-//   controle/              dernier contrôle des décisions adoptées
+//   controle/rNNN/         rapport de contrôle de chaque adoption de décisions ;
+//                          le manifeste désigne celui des décisions adoptées
 //   sorties/tentative-NNN/ rapports et SGX d'une tentative de production
 //
 // Chaque opération qui modifie le traitement reçoit la révision attendue et la
@@ -22,8 +23,8 @@ use std::path::{Component, Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
+use crate::fichiers::{empreinte, empreinte_fichier};
 use crate::regles::Modification;
 use crate::workflow::{self, Bilan, Inventaire, Statut};
 use crate::{Contexte, Erreur, Journal, Resultat};
@@ -60,6 +61,14 @@ struct Adoption {
     instantane: FichierSuivi,
     fichier_lu: String,
     horodatage: u64,
+    // Vrai pour un classeur importé d'ailleurs, faux pour le classeur d'édition
+    // du traitement. `default` : absent des manifestes écrits avant ce champ.
+    #[serde(default)]
+    importe: bool,
+    // Décisions : rapport de contrôle propre à cette adoption. Absent des
+    // manifestes plus anciens, qui utilisaient controle/controle_validation.xlsx.
+    #[serde(default)]
+    rapport: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -380,7 +389,7 @@ impl Traitement {
                 Some(&manifeste.reference_edition_correspondances),
             ),
             correspondances_adoptees: manifeste.correspondances.is_some(),
-            correspondances_lues: self.lecture(&manifeste.correspondances, EDITION_CORRESPONDANCES),
+            correspondances_lues: lecture(&manifeste.correspondances),
             analyse_preparee: manifeste.analyse_preparee,
             fichier_analyse: manifeste.analyse_preparee.then(|| {
                 self.dossier
@@ -393,12 +402,18 @@ impl Traitement {
                 manifeste.reference_edition_decisions.as_ref(),
             ),
             decisions_adoptees: manifeste.decisions.is_some(),
-            decisions_lues: self.lecture(&manifeste.decisions, EDITION_DECISIONS),
-            fichier_controle: manifeste.decisions.is_some().then(|| {
-                self.dossier
-                    .join(DOSSIER_CONTROLE)
-                    .join("controle_validation.xlsx")
-            }),
+            decisions_lues: lecture(&manifeste.decisions),
+            fichier_controle: match &manifeste.decisions {
+                Some(adoption) => Some(
+                    self.chemin_interne(
+                        adoption
+                            .rapport
+                            .as_deref()
+                            .unwrap_or("controle/controle_validation.xlsx"),
+                    )?,
+                ),
+                None => None,
+            },
             tentatives,
             tentatives_interrompues: self.tentatives_interrompues(),
             propositions: self.propositions()?,
@@ -470,6 +485,8 @@ impl Traitement {
             instantane,
             fichier_lu,
             horodatage: maintenant(),
+            importe: fichier.is_some(),
+            rapport: None,
         });
         manifeste.analyse_preparee = false;
         manifeste.decisions = None;
@@ -555,10 +572,17 @@ impl Traitement {
         let (contenu, fichier_lu) = self.lire_classeur_fourni(fichier, EDITION_DECISIONS)?;
 
         // Contrôle sur une copie : un classeur illisible ou au mauvais format
-        // n'est pas adopté et l'adoption précédente est conservée.
-        let lecture = self.fichier_temporaire("lecture-en-cours.xlsx", &contenu)?;
-        let dossier_controle = self.dossier.join(DOSSIER_CONTROLE);
+        // n'est pas adopté et l'adoption précédente est conservée. Le rapport
+        // est écrit dans un dossier propre à cette révision : tant que le
+        // manifeste ne le désigne pas, il n'est jamais présenté comme le rapport
+        // courant, même si l'adoption échoue plus loin.
+        let revision = self.manifeste.revision + 1;
+        let dossier_rapport = format!("{DOSSIER_CONTROLE}/r{revision:03}");
+        let dossier_controle = self.dossier.join(&dossier_rapport);
+        // Reste éventuel d'une adoption échouée à cette même révision : jamais désigné.
+        let _ = fs::remove_dir_all(&dossier_controle);
         workflow::creer_dossier(&dossier_controle)?;
+        let lecture = self.fichier_temporaire("lecture-en-cours.xlsx", &contenu)?;
         let controle = workflow::controler(&lecture, &analyse, &dossier_controle, journal);
         let _ = fs::remove_file(&lecture);
         let controle = controle?;
@@ -574,7 +598,6 @@ impl Traitement {
         bilan.renseigner_analyse(&analyse);
         bilan.renseigner_controle(&controle, divergences);
 
-        let revision = self.manifeste.revision + 1;
         let instantane = ecrire_fichier_interne(
             &self.dossier,
             &format!("entrees/decisions-r{revision:03}.xlsx"),
@@ -592,6 +615,8 @@ impl Traitement {
             instantane,
             fichier_lu,
             horodatage: maintenant(),
+            importe: fichier.is_some(),
+            rapport: Some(format!("{dossier_rapport}/controle_validation.xlsx")),
         });
         manifeste.dernier_bilan = Some(bilan.clone());
         self.enregistrer(manifeste)?;
@@ -833,12 +858,13 @@ impl Traitement {
         Ok((contenu, chemin.display().to_string()))
     }
 
-    fn lecture(&self, adoption: &Option<Adoption>, edition: &str) -> Option<Lecture> {
-        adoption.as_ref().map(|adoption| Lecture {
-            fichier: adoption.fichier_lu.clone(),
-            horodatage: adoption.horodatage,
-            // Comparaison sur la fin du chemin : le dossier du traitement a pu être déplacé.
-            classeur_du_traitement: Path::new(&adoption.fichier_lu).ends_with(edition),
+    // Empreinte enregistrée du SGX d'une tentative, si `chemin` en est un :
+    // une copie de ce SGX doit lui être identique.
+    pub fn empreinte_sgx(&self, chemin: &Path) -> Option<String> {
+        self.manifeste.tentatives.iter().find_map(|tentative| {
+            let fichier = tentative.sgx.as_ref()?;
+            let chemin_sgx = self.chemin_interne(&fichier.chemin).ok()?;
+            (chemin_sgx == chemin).then(|| fichier.empreinte.clone())
         })
     }
 
@@ -960,6 +986,14 @@ impl Traitement {
 
 // ---------------------------------------------------------------- Fichiers
 
+fn lecture(adoption: &Option<Adoption>) -> Option<Lecture> {
+    adoption.as_ref().map(|adoption| Lecture {
+        fichier: adoption.fichier_lu.clone(),
+        horodatage: adoption.horodatage,
+        classeur_du_traitement: !adoption.importe,
+    })
+}
+
 fn numero_tentative(dossier: &Path) -> Option<u32> {
     dossier
         .file_name()?
@@ -1054,17 +1088,6 @@ fn enregistrer_manifeste(dossier: &Path, manifeste: &Manifeste) -> Resultat<()> 
     let texte = serde_json::to_string_pretty(manifeste)?;
     ecrire_fichier_interne(dossier, MANIFESTE, texte.as_bytes())?;
     Ok(())
-}
-
-fn empreinte(contenu: &[u8]) -> String {
-    Sha256::digest(contenu)
-        .iter()
-        .map(|octet| format!("{octet:02x}"))
-        .collect()
-}
-
-fn empreinte_fichier(chemin: &Path) -> std::io::Result<String> {
-    Ok(empreinte(&fs::read(chemin)?))
 }
 
 fn maintenant() -> u64 {

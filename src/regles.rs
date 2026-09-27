@@ -422,6 +422,9 @@ pub(crate) fn controler_decisions(
         }
     }
 
+    // Contradictions : chaque ligne concernée, avec les lignes opposées.
+    let mut lignes_opposees: IndexMap<u32, Vec<u32>> = IndexMap::new();
+    let mut propositions_contradictoires = Vec::new();
     for (ligne_oui, proposition) in &lignes_oui {
         for (ligne_non, refusee) in &lignes_non {
             if proposition == refusee {
@@ -431,11 +434,39 @@ pub(crate) fn controler_decisions(
                     proposition.nouveau_nom,
                     proposition.fichier_modele
                 ));
+                lignes_opposees
+                    .entry(*ligne_oui)
+                    .or_default()
+                    .push(*ligne_non);
+                lignes_opposees
+                    .entry(*ligne_non)
+                    .or_default()
+                    .push(*ligne_oui);
+                propositions_contradictoires.push(proposition.clone());
             }
         }
     }
     for contradiction in &controle.contradictions {
         journal(&format!("[ERREUR] {contradiction}"));
+    }
+    // Une proposition contradictoire n'est ni admise ni refusée : le rapport le
+    // dit sur ses lignes, pour rester compréhensible hors de l'application.
+    controle
+        .validees
+        .retain(|proposition| !propositions_contradictoires.contains(proposition));
+    for ligne in &mut controle.rapport {
+        let numero = ligne[0].as_u64().unwrap_or_default() as u32;
+        if let Some(opposees) = lignes_opposees.get(&numero) {
+            if ligne[7] == "NON VALIDÉE" {
+                controle.refusees -= 1;
+            }
+            let opposees: Vec<String> = opposees.iter().map(u32::to_string).collect();
+            ligne[7] = json!("CONTRADICTOIRE");
+            ligne[8] = json!(format!(
+                "OUI et NON pour la même proposition (ligne {}) : aucun SGX tant que la contradiction n'est pas résolue",
+                opposees.join(", ")
+            ));
+        }
     }
 
     controle.propositions_sans_decision = propositions_repondues
@@ -1002,7 +1033,9 @@ mod tests {
                 Cellule::Autre("booléen true".into()),
             ),
             decision(9, Cellule::Nombre(2.0), texte("peut-être")),
-            decision(10, Cellule::Nombre(2.0), texte("NON")),
+            // NON sur une autre proposition (3 occurrences) : sur la même, ce
+            // serait une contradiction avec la ligne 2, hors du sujet de ce test.
+            decision(10, Cellule::Nombre(3.0), texte("NON")),
             decision(11, Cellule::Nombre(2.0), Cellule::Vide),
         ];
         let controle = controler_decisions(&analyse, &lignes, &mut |_| {});
@@ -1104,6 +1137,23 @@ mod tests {
                 [format!(
                     "Ligne {ligne_oui} (OUI) et ligne {ligne_non} (NON) : décisions contraires pour « A » → « Z » (m)"
                 )]
+            );
+            // Ni admise ni refusée ; le rapport le dit sur les deux lignes.
+            assert!(controle.validees.is_empty());
+            assert_eq!(controle.refusees, 0);
+            let suffixe = " : aucun SGX tant que la contradiction n'est pas résolue";
+            assert_eq!(
+                resultats(&controle),
+                [
+                    (
+                        "CONTRADICTOIRE".to_string(),
+                        format!("OUI et NON pour la même proposition (ligne 3){suffixe}")
+                    ),
+                    (
+                        "CONTRADICTOIRE".to_string(),
+                        format!("OUI et NON pour la même proposition (ligne 2){suffixe}")
+                    ),
+                ]
             );
         }
 

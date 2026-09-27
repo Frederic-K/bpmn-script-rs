@@ -36,4 +36,5 @@ export const ouvrirFichier = (chemin) => invoke("ouvrir_fichier", { chemin });
 
 export const afficherDansDossier = (chemin) => invoke("afficher_dans_dossier", { chemin });
 
-export const enregistrerCopie = (chemin) => invoke("enregistrer_copie", { chemin });
+// nomPropose : nom suggéré dans le dialogue (sinon celui du fichier).
+export const enregistrerCopie = (chemin, nomPropose = null) => invoke("enregistrer_copie", { chemin, nomPropose });

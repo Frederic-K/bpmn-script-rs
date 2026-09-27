@@ -243,6 +243,8 @@ try:
     attendre_texte("ont reçu à la fois OUI et NON")
     verifier("décisions contraires pour « Serv. achats »" in fenetre.find_element(By.TAG_NAME, "main").text, "contradiction : lignes citées")
     verifier(not bouton("Générer le SGX modifié").is_enabled(), "contradiction : génération impossible")
+    resultats = [cellule.text for cellule in fenetre.find_elements(By.CSS_SELECTOR, "tbody td:nth-child(4)")]
+    verifier(resultats.count("CONTRADICTOIRE") == 2, f"contradiction : deux lignes marquées dans le tableau ({resultats})")
     capture("decisions-contradictoires")
 
     # Décisions : un OUI, une valeur non reconnue.

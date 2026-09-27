@@ -24,6 +24,9 @@
       (bilan?.statut === "ProductionPossible" || bilan?.statut === "SgxProduit"),
   );
 
+  // Résultat d'une ligne (rapport du moteur) -> couleur de sa pastille.
+  const COULEURS_DES_RESULTATS = { "IGNORÉE": "alerte", "CONTRADICTOIRE": "erreur" };
+
   let lectureRefusee = $state(false);
   let copie = $state(null);
 
@@ -38,7 +41,7 @@
   }
 
   async function enregistrerCopie() {
-    const destination = await executer(textes.actions.copie, () => moteur.enregistrerCopie(etat.fichier_analyse));
+    const destination = await executer(textes.actions.copie, () => moteur.enregistrerCopie(etat.fichier_analyse, texte.nomCopie(etat.nom)));
     if (destination) copie = destination;
   }
 
@@ -131,7 +134,7 @@
               <td class="text-right tabular-nums">{ligne.ligne}</td>
               <td class="whitespace-pre-wrap">{ligne.nom_actuel}</td>
               <td class="font-semibold whitespace-pre-wrap">{ligne.nouveau_nom}</td>
-              <td><Pastille couleur={ligne.resultat === "IGNORÉE" ? "alerte" : "neutre"}>{ligne.resultat}</Pastille></td>
+              <td><Pastille couleur={COULEURS_DES_RESULTATS[ligne.resultat] ?? "neutre"}>{ligne.resultat}</Pastille></td>
               <td>{ligne.motif}</td>
             </tr>
           {/each}

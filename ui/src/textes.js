@@ -154,6 +154,7 @@ export const textes = {
     externeConsigne:
       "Enregistrez une copie à transmettre. Le valideur renseigne uniquement la colonne Validation, sans modifier les autres colonnes.",
     copier: "Enregistrer une copie à transmettre",
+    nomCopie: (traitement) => `validation_${traitement}.xlsx`,
     copieSansEcrasement: "Choisissez un nouveau nom : aucun fichier existant n'est remplacé.",
     etiquetteCopie: "Copie",
     copieEnregistree: (chemin) => `Copie enregistrée : ${chemin}`,

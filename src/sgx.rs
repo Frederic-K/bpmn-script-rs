@@ -236,8 +236,8 @@ pub(crate) fn produire_sgx(
             Err(cause) => Err(Erreur::nouvelle(
                 "ecriture_impossible",
                 format!(
-                    "Le SGX n'a pas pu être créé : {} ({cause})",
-                    destination.display()
+                    "Le SGX n'a pas pu être créé. {}",
+                    fichiers::message_publication_impossible(destination, &cause)
                 ),
             )),
         }

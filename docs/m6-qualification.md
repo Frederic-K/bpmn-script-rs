@@ -44,7 +44,8 @@ Résultat de l'exécution : voir la section 4.
    - **Import refusé :** importer un classeur au mauvais format (le classeur de correspondance, par exemple). Le message « Classeur non adopté. Les décisions lues le … restent utilisées » apparaît.
    - **Correspondances modifiées :** modifier le classeur de correspondance après l'analyse. L'analyse, les décisions et le bilan affichent « à actualiser », et la génération est suspendue.
    - **Contradiction :** dupliquer une ligne du classeur de décision, avec OUI sur l'une et NON sur l'autre. Le contrôle est bloquant, les deux lignes sont citées, et aucun SGX n'est possible.
-7. **Clé USB (facultatif) :** copier `bpmn-script-app.exe` sur une clé et le lancer sur un autre poste disposant de WebView2. La portabilité n'est pas garantie tant que cet essai n'est pas consigné.
+7. **Emplacement sans liens physiques :** « Enregistrer une copie » vers une clé USB en FAT ou exFAT. La copie doit être refusée avec la consigne de choisir un disque local, sans laisser de fichier sous le nom choisi.
+8. **Clé USB (facultatif) :** copier `bpmn-script-app.exe` sur une clé et le lancer sur un autre poste disposant de WebView2. La portabilité n'est pas garantie tant que cet essai n'est pas consigné.
 
 ## 3. Essai sur une copie de SAPHIR puis A17 — Signavio (opérateur)
 
@@ -102,6 +103,7 @@ Critère A16 : compilation, installateur et lancement **qualifiés sur une machi
 | A16 — installation et lancement | | | | |
 | A16 — parcours complet, Excel, reprise | | | | |
 | A16 — parcours des classeurs (étape 6) | | | | |
+| A16 — clé USB en FAT/exFAT refusée (étape 7) | | | | |
 | Clé USB (facultatif) | | | | |
 | SAPHIR — comparaison Python / Rust | | | | |
 | A17 — import Signavio de test | | | | |

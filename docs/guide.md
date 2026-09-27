@@ -11,7 +11,7 @@ L'opérateur ne modifie que **deux classeurs**, toujours depuis les boutons de l
 | `edition/correspondance_swimlanes.xlsx` | **Vous**, colonne Nouveau nom | Demandes de renommage. Une cellule vide = pas de changement. Enregistrer, fermer, puis « Lire les correspondances » |
 | `edition/validation_modifications.xlsx` | **Vous**, colonne Validation (OUI ou NON) | Le classeur de décision, **le seul utilisé** pour les décisions. Enregistrer, fermer, puis « Lire le classeur de décision » |
 | Retour d'un valideur (emplacement libre) | Le valideur, colonne Validation | « Importer le retour du valideur » le copie dans le classeur de décision, qu'il **remplace entièrement** (aucune fusion). Le fichier d'origine n'est plus relu ensuite |
-| `source/`, `inventaire/`, `analyse/`, `controle/` | L'application | Copie de la source, inventaire, analyse, rapport du dernier contrôle : à consulter, jamais à remplir |
+| `source/`, `inventaire/`, `analyse/`, `controle/` | L'application | Copie de la source, inventaire, analyse, rapports de contrôle (un par lecture de décisions ; « Ouvrir le rapport de contrôle » ouvre celui des décisions utilisées) : à consulter, jamais à remplir |
 | `entrees/` | L'application | Instantanés des classeurs lus. **C'est cette copie qui est utilisée**, pas le fichier d'origine |
 | `edition/precedents/` | L'application | Classeur modifié sans être lu puis remplacé (par un import ou une nouvelle analyse) : gardé, jamais perdu |
 | `sorties/tentative-NNN/` | L'application | Le SGX produit et vérifié, avec ses rapports. Une tentative par génération |
@@ -20,9 +20,10 @@ Ce que l'application garantit :
 
 - La source et les fichiers que vous fournissez ne sont jamais modifiés.
 - Aucun fichier existant n'est jamais remplacé, y compris par « Enregistrer une copie », même si vous confirmez « Remplacer » dans le dialogue de Windows.
-- Une copie ou un SGX n'apparaît sous son nom final qu'une fois complet. Un arrêt brutal peut laisser un fichier `….copie-en-cours` ou `….en-cours`, qui n'est jamais un résultat.
+- Une copie ou un SGX n'apparaît sous son nom final qu'une fois complet. Un arrêt brutal peut laisser un fichier `….copie-en-cours` ou `….en-cours`, qui n'est jamais un résultat. Un emplacement qui ne permet pas cette garantie (clé USB en FAT ou exFAT, certains partages réseau) est refusé avec un message : choisir un disque local.
+- La copie d'un SGX produit est comparée à l'empreinte enregistrée lors de sa production : un SGX modifié depuis n'est jamais copié.
 - Un classeur modifié sans être relu est signalé « à relire », et ce qui en dépend « à actualiser ». La génération est alors suspendue.
-- Seul un OUI identique à une proposition de l'analyse est appliqué. NON, une réponse absente ou une ligne absente n'autorisent rien. OUI et NON sur la même proposition bloquent tout.
+- Seul un OUI identique à une proposition de l'analyse est appliqué. NON, une réponse absente ou une ligne absente n'autorisent rien. OUI et NON sur la même proposition bloquent tout ; le rapport de contrôle marque ces lignes « CONTRADICTOIRE ».
 - Le SGX écrit est relu et comparé à la source avant d'être publié : seules les lanes validées peuvent différer.
 
 ## 2. Lire le code : quelle partie s'occupe de quoi
@@ -36,7 +37,7 @@ Le métier est entièrement dans le moteur Rust (`src/`). L'interface (`ui/`) af
 | `regles.rs` | Les **règles métier**, en mémoire, sans fichier : trouver les lanes, compter, calculer les propositions, contrôler les décisions, recompter, vérifier le résultat | `trouver_lanes`, `synthetiser`, `lire_correspondances`, `dry_run`, `controler_decisions`, `tester_renommages`, `verifier_modele` |
 | `sgx.rs` | L'**archive SGX** : lire les modèles, écrire la nouvelle archive, la relire et la vérifier avant publication | `extraire_lanes`, `produire_sgx`, `verifier_sgx` |
 | `excel.rs` | Les **classeurs Excel** : lire les cellules telles quelles (formules comprises), vérifier la feuille et les en-têtes, écrire les rapports | `lire_feuille` |
-| `fichiers.rs` | **Publier un fichier sans jamais en écraser un** (SGX produit, copies enregistrées) | `publier_sans_ecraser`, `copier_sans_ecraser` |
+| `fichiers.rs` | **Empreintes, et publication d'un fichier sans jamais en écraser un** (SGX produit, copies enregistrées) | `publier_sans_ecraser`, `copier_sans_ecraser` |
 | `workflow.rs` | L'**enchaînement des étapes**, commun au CLI et à l'application ; le `Bilan` et le `Statut` retournés | `executer` (équivalent du script Python) |
 | `traitement.rs` | Le **dossier de traitement** : création, reprise, instantanés, empreintes, révisions, verrou, tentatives | `adopter_correspondances`, `preparer_analyse`, `adopter_decisions`, `produire`, `verifier_integrite` |
 | `lib.rs` | Le type `Erreur` (code, message, détails) et ce que le moteur expose | — |

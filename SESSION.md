@@ -81,16 +81,29 @@ Constats de ma propre relecture, corrigés au passage :
 - L'étape Décisions était cochée « terminée » même sur un contrôle bloquant. Elle ne l'est plus que si la génération est possible.
 - Composant `Fichier` : dans une colonne étroite, le nom devenait illisible (une lettre par ligne). Les actions passent maintenant à la ligne.
 
+### Contre-revue de `d3c57af` et revue approfondie de `f7cbcae` (F01–F04)
+
+| Constat | Correction | Preuve |
+|---|---|---|
+| F01 : un retour valide dont l'adoption échoue tard (verrou, écriture) laissait son rapport comme rapport courant, alors que les décisions précédentes restaient utilisées | Un rapport par adoption (`controle/rNNN/`), désigné par le manifeste seulement une fois l'adoption enregistrée | `adoption_echouee_ne_change_pas_le_rapport_courant` (échoue sur l'ancien code) |
+| F02 : la copie d'un SGX ne vérifiait pas son empreinte de production | `Traitement::empreinte_sgx` ; `copier_sans_ecraser` compare la copie temporaire à cette empreinte avant publication | `copie_d_un_sgx_modifie_refusee`, `copie_refusee_si_l_empreinte_differe` |
+| F03 : repli par copie exclusive, sans garantie de fichier final complet, déclenché par toute erreur | Repli supprimé : emplacement sans liens physiques refusé avec une consigne (disque local). Commentaires et guide alignés | Tests de publication ; essai clé USB ajouté à m6 (étape 7) |
+| F04 : provenance déduite de la fin du chemin | `Adoption.importe` enregistré à l'adoption | `import_du_classeur_d_un_autre_traitement_reste_un_import` |
+| Point 3 : contradiction absente du rapport Excel | Lignes `CONTRADICTOIRE`, motif avec la ligne opposée ; proposition ni admise ni refusée | Tests unitaire et CLI ; bout en bout |
+| Point 4 : nom de la copie à transmettre | Nom proposé `validation_<traitement>.xlsx` (seul le nom suggéré change) | — |
+
+Non retenu, comme recommandé : blocage des doublons de correspondances à cibles différentes (point 7, décision métier à prendre, attentes V1 à faire évoluer).
+
 Documenté pour l'opérateur et le propriétaire : [docs/guide.md](docs/guide.md) (fichiers du traitement, garanties, correspondance code / Python) ; essais Excel réels à faire sous Windows : `docs/m6-qualification.md`, étape 6.
 
 ## Preuves
 
 | Contrôle | Résultat |
 |---|---|
-| `cargo test --workspace --locked` | 90 tests : 29 unitaires du moteur, 2 de chemins, 34 CLI, 24 de traitement, 1 de l'adaptateur. Sous Linux ; sous Windows par l'intégration continue |
+| `cargo test --workspace --locked` | 94 tests : 30 unitaires du moteur, 2 de chemins, 34 CLI, 27 de traitement, 1 de l'adaptateur. Sous Linux ; sous Windows par l'intégration continue |
 | Clippy (`-D warnings`), rustfmt, `npm run build` | Propres, sans avertissement |
 | Qualification V1 (30 scénarios comparés au Python d'origine) | Conforme sous Linux (rejouée après la règle des contradictions) et avec le binaire Windows (`tests/qualification/verifier_v1.py`) |
-| Test de bout en bout de la vraie application (Linux, WebKitGTK) | 32 contrôles réussis, dont : double clic sur « Générer » (une seule tentative), classeur modifié qui suspend la génération, D02, D03, D04, D08, contradiction bloquante, import refusé, provenance des décisions, analyse à actualiser |
+| Test de bout en bout de la vraie application (Linux, WebKitGTK) | 33 contrôles réussis, dont : double clic sur « Générer » (une seule tentative), classeur modifié qui suspend la génération, D02, D03, D04, D08, contradiction bloquante, import refusé, provenance des décisions, analyse à actualiser |
 | Windows (GitHub Actions) | 90 tests (dont la publication par lien physique), installateur, qualification et lancement réussis sur `2a18534` : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36268807829 |
 | Mutations volontaires du code (M1) | 5 sur 5 détectées par les tests |
 

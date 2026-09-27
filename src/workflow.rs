@@ -162,9 +162,12 @@ impl Bilan {
             .collect();
         self.contradictions = controle.contradictions.clone();
         self.divergences = divergences;
-        self.statut = if controle.validees.is_empty() {
+        // Contradictions d'abord : elles bloquent même si plus rien n'est admis.
+        self.statut = if !self.contradictions.is_empty() {
+            Statut::ControleBloquant
+        } else if controle.validees.is_empty() {
             Statut::AucuneDecisionAdmissible
-        } else if !self.contradictions.is_empty() || !self.divergences.is_empty() {
+        } else if !self.divergences.is_empty() {
             Statut::ControleBloquant
         } else {
             Statut::ProductionPossible

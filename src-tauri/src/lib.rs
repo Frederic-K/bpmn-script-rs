@@ -222,6 +222,15 @@ async fn choisir_classeur(app: AppHandle) -> Reponse<Option<PathBuf>> {
 
 // Seuls les fichiers du traitement ouvert peuvent être ouverts, affichés ou copiés.
 fn fichier_du_traitement(ouvert: &TraitementOuvert, chemin: &Path) -> Reponse<PathBuf> {
+    Ok(fichier_et_empreinte(ouvert, chemin)?.0)
+}
+
+// Fichier du traitement et, s'il s'agit d'un SGX produit, son empreinte
+// enregistrée : une copie doit lui être identique.
+fn fichier_et_empreinte(
+    ouvert: &TraitementOuvert,
+    chemin: &Path,
+) -> Reponse<(PathBuf, Option<String>)> {
     let garde = ouvert
         .0
         .try_lock()
@@ -229,7 +238,9 @@ fn fichier_du_traitement(ouvert: &TraitementOuvert, chemin: &Path) -> Reponse<Pa
     let traitement = garde
         .as_ref()
         .ok_or_else(|| erreur("aucun_traitement", "Aucun traitement n'est ouvert."))?;
-    verifier_appartenance(traitement.dossier(), chemin)
+    let chemin = verifier_appartenance(traitement.dossier(), chemin)?;
+    let empreinte = traitement.empreinte_sgx(&chemin);
+    Ok((chemin, empreinte))
 }
 
 fn verifier_appartenance(dossier: &Path, chemin: &Path) -> Reponse<PathBuf> {
@@ -286,20 +297,24 @@ async fn afficher_dans_dossier(
     })
 }
 
-// Enregistre une copie d'un fichier du traitement (classeur pour un arbitre,
+// Enregistre une copie d'un fichier du traitement (classeur pour un valideur,
 // SGX produit) à l'emplacement choisi. L'original reste dans le traitement.
+// `nom_propose` : nom suggéré dans le dialogue, sinon celui du fichier.
 #[tauri::command]
 async fn enregistrer_copie(
     app: AppHandle,
     ouvert: State<'_, TraitementOuvert>,
     chemin: PathBuf,
+    nom_propose: Option<String>,
 ) -> Reponse<Option<PathBuf>> {
-    let chemin = fichier_du_traitement(&ouvert, &chemin)?;
-    let nom = chemin
-        .file_name()
-        .unwrap_or_default()
-        .to_string_lossy()
-        .into_owned();
+    let (chemin, empreinte_attendue) = fichier_et_empreinte(&ouvert, &chemin)?;
+    let nom = nom_propose.unwrap_or_else(|| {
+        chemin
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned()
+    });
     let Some(destination) = dialogue(&app, "Enregistrer une copie")
         .set_file_name(&nom)
         .blocking_save_file()
@@ -307,7 +322,7 @@ async fn enregistrer_copie(
     else {
         return Ok(None);
     };
-    bpmn_script_rs::copier_sans_ecraser(&chemin, &destination)?;
+    bpmn_script_rs::copier_sans_ecraser(&chemin, &destination, empreinte_attendue.as_deref())?;
     Ok(Some(destination))
 }
 

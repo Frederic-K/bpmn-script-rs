@@ -21,7 +21,7 @@ BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des
 |---|---|
 | `src/regles.rs` | Règles métier en mémoire : inventaire, synthèse, correspondances, dry-run, contrôle des décisions, recomptage, vérification du résultat. Aucun accès fichier |
 | `src/sgx.rs` | Lecture de l'archive (anomalies P03), écriture, **relecture et vérification** puis publication |
-| `src/fichiers.rs` | Publication sans écrasement : temporaire complet, puis lien physique (refusé si la destination existe) ; copies enregistrées par l'utilisateur |
+| `src/fichiers.rs` | Empreintes ; publication sans écrasement : temporaire complet, puis lien physique (refusé si la destination existe) ; pas de repli sur un emplacement sans liens physiques ; copies enregistrées (un SGX est comparé à son empreinte de production) |
 | `src/excel.rs` | Lecture brute des cellules (formules comprises), contrôle feuille et en-têtes, écriture des classeurs |
 | `src/workflow.rs` | Étapes communes, `Bilan`, `Statut`, mode historique `input/`, `work/`, `output/` |
 | `src/traitement.rs` | Dossier de traitement : manifeste, empreintes, instantanés, révisions, verrou, tentatives |
@@ -40,7 +40,7 @@ BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des
 
 ```sh
 npm ci                                            # dépendances interface (versions exactes)
-cargo test --workspace --locked                   # 90 tests Rust
+cargo test --workspace --locked                   # 94 tests Rust
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo fmt --all --check
 npm run build                                     # interface : doit rester sans avertissement
@@ -77,6 +77,8 @@ npm run tauri build                               # release + installateur NSIS 
 - **Indexation mutable de `serde_json`** : `valeur["cle"]` sur un `&mut Value` insère `null` si la clé manque. Utiliser `get_mut` (voir `regles::enfants_modifiables`).
 - **Messages du CLI** : ils font partie de la comparaison de qualification ; ne pas en changer l'ordre sans raison.
 - **Données obsolètes** : un classeur modifié sans être relu (`*_a_relire`) laisse le dernier bilan en place ; l'interface doit le présenter comme « à actualiser », jamais comme l'état actuel.
+- **Rapport de contrôle par adoption** : `controle/rNNN/`, désigné par le manifeste. Ne jamais écrire le rapport courant avant que l'adoption soit enregistrée (un échec tardif laisserait un rapport qui ne correspond pas aux décisions utilisées).
+- **Provenance** : `Adoption.importe` est enregistré à l'adoption ; ne pas la déduire du chemin lu.
 - **Un seul classeur de décision** : `edition/validation_modifications.xlsx`. Un retour importé le remplace entièrement (pas de fusion). Le classeur d'analyse a lui aussi une colonne Validation : ne pas le proposer à l'ouverture dans l'interface.
 - **Non calculé ≠ vide** : `etat.propositions` est vide tant que l'analyse n'est pas préparée ; tester `analyse_preparee` avant de conclure à « aucun changement ».
 - **Chemins Windows** : ne pas transmettre la forme canonique `\\?\` à Excel ou à l'Explorateur.

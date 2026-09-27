@@ -877,3 +877,88 @@ fn import_refuse_conserve_les_decisions_lues() {
         Statut::ProductionPossible
     );
 }
+
+// ---------------------------------------------------------------- Revue approfondie
+
+// F01 : un retour valide dont l'adoption échoue après l'écriture de son rapport
+// (ici, l'instantané ne peut pas être écrit) : le rapport courant reste celui
+// des décisions adoptées, pas celui du retour refusé.
+#[test]
+fn adoption_echouee_ne_change_pas_le_rapport_courant() {
+    let espace = Espace::nouveau("adoption-echouee");
+    let mut traitement = espace.creer();
+    jusqu_aux_decisions(&mut traitement);
+    let etat = traitement.etat().unwrap();
+    let rapport = etat.fichier_controle.unwrap();
+    let contenu_avant = fs::read(&rapport).unwrap();
+
+    let retour = espace.0.join("retour-non.xlsx");
+    decisions_a_z(&retour, "NON", "NON");
+    let revision = traitement.revision();
+    fs::create_dir_all(
+        traitement
+            .dossier()
+            .join(format!("entrees/decisions-r{:03}.xlsx", revision + 1)),
+    )
+    .unwrap();
+    assert!(
+        traitement
+            .adopter_decisions(revision, Some(&retour), &mut |_| {})
+            .is_err()
+    );
+
+    let etat = traitement.etat().unwrap();
+    assert_eq!(etat.revision, revision);
+    assert_eq!(etat.fichier_controle.unwrap(), rapport);
+    assert_eq!(fs::read(&rapport).unwrap(), contenu_avant);
+    assert_eq!(
+        etat.dernier_bilan.unwrap().statut,
+        Statut::ProductionPossible
+    );
+}
+
+// F02 : la copie d'un SGX produit est comparée à l'empreinte de sa tentative.
+#[test]
+fn copie_d_un_sgx_modifie_refusee() {
+    let espace = Espace::nouveau("copie-sgx-modifie");
+    let mut traitement = espace.creer();
+    jusqu_aux_decisions(&mut traitement);
+    let sgx = traitement
+        .produire(traitement.revision(), &mut |_| {})
+        .unwrap()
+        .sgx_produit
+        .unwrap();
+    let attendue = traitement.empreinte_sgx(&sgx).unwrap();
+    assert!(traitement.empreinte_sgx(&espace.source()).is_none());
+
+    let copie = espace.0.join("copie.sgx");
+    bpmn_script_rs::copier_sans_ecraser(&sgx, &copie, Some(&attendue)).unwrap();
+
+    let mut contenu = fs::read(&sgx).unwrap();
+    contenu.push(0);
+    fs::write(&sgx, contenu).unwrap();
+    let refusee = espace.0.join("copie-alteree.sgx");
+    let erreur = bpmn_script_rs::copier_sans_ecraser(&sgx, &refusee, Some(&attendue)).unwrap_err();
+    assert_eq!(erreur.code, "copie_refusee");
+    assert!(!refusee.exists());
+}
+
+// F04 : importer le classeur d'édition d'un autre traitement reste un import
+// (la provenance n'est plus déduite de la fin du chemin).
+#[test]
+fn import_du_classeur_d_un_autre_traitement_reste_un_import() {
+    let espace = Espace::nouveau("provenance");
+    let mut traitement = espace.creer();
+    jusqu_a_l_analyse(&mut traitement);
+    let autre = espace
+        .0
+        .join("autre traitement/edition/validation_modifications.xlsx");
+    fs::create_dir_all(autre.parent().unwrap()).unwrap();
+    decisions_a_z(&autre, "OUI", "OUI");
+    traitement
+        .adopter_decisions(traitement.revision(), Some(&autre), &mut |_| {})
+        .unwrap();
+    let lues = traitement.etat().unwrap().decisions_lues.unwrap();
+    assert!(!lues.classeur_du_traitement);
+    assert_eq!(lues.fichier, autre.display().to_string());
+}

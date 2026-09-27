@@ -1066,6 +1066,12 @@ fn decisions_contradictoires_bloquent_la_production() {
         "[RÉSULTAT] décisions contradictoires (OUI et NON pour la même proposition) : aucun nouveau SGX n'a été créé"
     );
     assert!(!espace.chemin(SORTIE_SGX).exists());
+    // Le rapport reste compréhensible seul : les deux lignes sont marquées.
+    assert_eq!(
+        resultats_controle(&espace),
+        ["CONTRADICTOIRE", "CONTRADICTOIRE"]
+    );
+    assert_eq!(espace.json("output/modifications_validees.json"), json!([]));
 }
 
 #[test]

@@ -81,6 +81,7 @@ Ajoutée après M6, à la suite de la revue Codex du commit `abe5311`.
 **Maintenant :** une proposition qui reçoit OUI et NON, dans n'importe quel ordre, est une **contradiction**. Aucune des deux lignes ne l'emporte. Le contrôle est bloquant (`Statut::ControleBloquant`, `Bilan.contradictions`), et aucun SGX n'est produit. Le CLI écrit une ligne `[ERREUR] Ligne n (OUI) et ligne m (NON) : décisions contraires pour « A » → « Z » (fichier modèle)` et sort avec le code 2.
 
 - La contradiction porte sur la proposition exacte, c'est-à-dire ses cinq champs. Un NON sur une autre proposition n'est pas une contradiction.
+- Après la contre-revue de `d3c57af`, le rapport `controle_validation.xlsx` reste lisible seul. Les lignes concernées ont le résultat `CONTRADICTOIRE`, et leur motif indique la ligne opposée et l'absence de SGX. La proposition contradictoire n'est ni admise (`modifications_validees.json`) ni comptée comme refusée. Le nom de feuille et les colonnes du rapport sont inchangés.
 - Un OUI répété n'est pas une contradiction. R09 conserve ce doublon, et le recomptage le bloque, comme avant (scénario `duplicate_validation`).
 - Aucun des 30 scénarios de qualification ne contient de contradiction : les attentes V1 sont inchangées (`tests/qualification/verifier_v1.py`, vérifié après la modification).
 
