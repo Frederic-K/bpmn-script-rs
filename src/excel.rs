@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use rust_xlsxwriter::{DataValidation, Format, FormatAlign, FormatPattern, Workbook};
 use serde_json::{Value, json};
 
-use crate::regles::{Modification, Synthese};
+use crate::regles::{Modification, Synthese, repetitions_dans_un_modele};
 use crate::{Contexte, Erreur, Resultat};
 
 pub(crate) const COLONNES_CORRESPONDANCE: [&str; 2] = ["Nom actuel", "Nouveau nom"];
@@ -174,19 +174,14 @@ pub(crate) fn ecrire_inventaire(
     let lignes: Vec<Vec<Value>> = lanes
         .into_iter()
         .map(|(lane, infos)| {
-            let multiples: Vec<String> = infos
-                .occurrences_par_flux
-                .iter()
-                .filter(|(_, nombre)| **nombre > 1)
-                .map(|(flux, nombre)| format!("{flux} ({nombre})"))
-                .collect();
             vec![
                 json!(lane),
                 Value::Null,
                 json!(infos.occurrences),
                 json!(infos.flux.len()),
                 json!(infos.flux.join(", ")),
-                json!(multiples.join(", ")),
+                // Une entrée par ligne dans la cellule.
+                json!(repetitions_dans_un_modele(infos).join("\n")),
             ]
         })
         .collect();
@@ -200,7 +195,7 @@ pub(crate) fn ecrire_inventaire(
             ("Occurrences", 15.0),
             ("Nombre de flux", 18.0),
             ("Flux concernés", 90.0),
-            ("Flux avec occurrences multiples", 90.0),
+            ("Répétitions dans un même modèle", 90.0),
         ],
         &lignes,
         &[4, 5],

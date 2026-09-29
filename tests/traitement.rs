@@ -286,6 +286,77 @@ fn reprise_apres_fermeture_et_original_deplace() {
 }
 
 #[test]
+fn traitement_cree_avant_l_evolution_de_la_colonne_f_reste_utilisable() {
+    // Traitement créé par une version antérieure : synthese.json avec
+    // `occurrences_par_flux` et classeur d'édition à l'ancienne colonne F. Rien
+    // n'est migré ni régénéré ; la reprise va jusqu'au SGX.
+    let espace = Espace::nouveau("ancien-format");
+    let dossier = espace.creer().dossier().to_path_buf();
+    let synthese_json = dossier.join("inventaire/synthese.json");
+    let mut synthese: Value = serde_json::from_slice(&fs::read(&synthese_json).unwrap()).unwrap();
+    synthese["A"]["occurrences_par_flux"] = json!({"Flux": 3});
+    let ancienne_synthese = serde_json::to_vec_pretty(&synthese).unwrap();
+    fs::write(&synthese_json, &ancienne_synthese).unwrap();
+    let edition = dossier.join("edition/correspondance_swimlanes.xlsx");
+    ecrire_xlsx(
+        &edition,
+        "Correspondance",
+        &[
+            [
+                "Nom actuel",
+                "Nouveau nom",
+                "Occurrences",
+                "Nombre de flux",
+                "Flux concernés",
+                "Flux avec occurrences multiples",
+            ]
+            .map(|titre| json!(titre))
+            .to_vec(),
+            vec![
+                json!("A"),
+                json!("Z"),
+                json!(3),
+                json!(1),
+                json!("Flux"),
+                json!("Flux (3)"),
+            ],
+            vec![
+                json!("B"),
+                Value::Null,
+                json!(1),
+                json!(1),
+                json!("Flux"),
+                Value::Null,
+            ],
+        ],
+    );
+    let saisie = fs::read(&edition).unwrap();
+
+    let mut traitement = Traitement::ouvrir(&dossier).unwrap();
+    let bilan = traitement
+        .adopter_correspondances(traitement.revision(), None, &mut |_| {})
+        .unwrap();
+    assert_eq!(bilan.correspondances_retenues, 1);
+    traitement
+        .preparer_analyse(traitement.revision(), &mut |_| {})
+        .unwrap();
+    decisions_a_z(
+        &traitement.etat().unwrap().edition_decisions.unwrap(),
+        "OUI",
+        "OUI",
+    );
+    traitement
+        .adopter_decisions(traitement.revision(), None, &mut |_| {})
+        .unwrap();
+    let bilan = traitement
+        .produire(traitement.revision(), &mut |_| {})
+        .unwrap();
+    assert_eq!(bilan.statut, Statut::SgxProduit);
+    assert_eq!(fs::read(&synthese_json).unwrap(), ancienne_synthese);
+    assert_eq!(fs::read(&edition).unwrap(), saisie);
+}
+
+#[test]
 fn deuxieme_ouverture_refusee_tant_que_le_traitement_est_ouvert() {
     let espace = Espace::nouveau("verrou");
     let traitement = espace.creer();

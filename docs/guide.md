@@ -16,6 +16,23 @@ L'opérateur ne modifie que **deux classeurs**, toujours depuis les boutons de l
 | `edition/precedents/` | L'application | Classeur modifié sans être lu puis remplacé (par un import ou une nouvelle analyse) : gardé, jamais perdu |
 | `sorties/tentative-NNN/` | L'application | Le SGX produit et vérifié, avec ses rapports. Une tentative par génération |
 
+### Lire l'inventaire (classeur de correspondance)
+
+Seules les colonnes A et B sont lues à l'import. Les autres sont des informations pour décider.
+
+| Colonne | Contenu |
+|---|---|
+| A — Nom actuel | Nom de swimlane, tel qu'il est dans les modèles (espaces périphériques retirés) |
+| B — Nouveau nom | À remplir pour demander un renommage ; vide = aucun changement |
+| C — Occurrences | Nombre total de swimlanes portant ce nom, tous modèles confondus |
+| D — Nombre de flux | Nombre de **titres de modèles distincts**. Deux modèles différents qui portent le même titre comptent pour un. Ce n'est donc pas un nombre de modèles |
+| E — Flux concernés | Ces titres, dans l'ordre de première apparition |
+| F — Répétitions dans un même modèle | Les modèles où ce nom apparaît **au moins deux fois**, un par ligne : `Titre (n occurrences) — chemin interne`. Le chemin distingue deux modèles de même titre. Vide si le nom n'est jamais répété dans un modèle |
+
+La colonne F est une information : une répétition ne bloque rien. Le renommage s'applique à toutes les occurrences du modèle, et l'analyse propose une ligne par modèle.
+
+Un traitement créé avant cette évolution garde son ancienne colonne F, « Flux avec occurrences multiples », qui additionnait les occurrences par titre et mêlait les répétitions et les modèles homonymes. Ce classeur reste accepté ; il n'est ni converti ni régénéré.
+
 Ce que l'application garantit :
 
 - La source et les fichiers que vous fournissez ne sont jamais modifiés.
@@ -60,6 +77,7 @@ Le métier est entièrement dans le moteur Rust (`src/`). L'interface (`ui/`) af
 | Recherche et renommage des lanes | `regles.rs` : `trouver_lanes`, `renommer_lanes` |
 | Extraction des modèles du SGX | `sgx.rs` : `extraire_lanes` |
 | Synthèse et inventaire Excel | `regles.rs` : `synthetiser` ; `workflow.rs` : `inventorier` |
+| Colonne F de l'inventaire | `regles.rs` : `repetitions_dans_un_modele`. Évolution V1 : le Python calcule l'ancienne colonne, par titre de modèle (`docs/m3-contrats-v1.md`) |
 | Correspondances et analyse | `regles.rs` : `lire_correspondances`, `dry_run` |
 | Comparaison des validations | `regles.rs` : `controler_decisions` |
 | Renommage en mémoire et écriture | `regles.rs` : `tester_renommages`, `appliquer_renommages` ; `sgx.rs` : `produire_sgx` |

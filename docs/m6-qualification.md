@@ -63,8 +63,10 @@ python C:\qualification\qualify_rust.py --root C:\qualification --binary <chemin
 
 Résultat attendu pour l'entrée `saphir` de `rust-qualification-results.json` :
 - 12 noms normalisés et 13 propositions ;
-- aucune différence avec Python aux trois étapes ;
+- aux trois étapes, seules deux différences avec Python : `inventaire_swimlanes.xlsx` (colonne F) et `synthese.json` (sans `occurrences_par_flux`), évolution V1 décrite dans `docs/m3-contrats-v1.md` ;
 - un SGX produit.
+
+`python tests/qualification/verifier_v1.py C:\qualification\rust-qualification-results.json` contrôle alors aussi l'entrée `saphir` : aucune autre différence, et ces deux fichiers conformes à l'évolution attendue.
 
 (Mesures de référence du dossier : 241 modèles, 848 occurrences, 289 noms distincts.) Les décisions OUI de cet essai sont fabriquées pour le test : ce n'est pas un arbitrage métier.
 

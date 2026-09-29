@@ -104,6 +104,7 @@ Point restant à vérifier : l'import dans Signavio d'un SGX produit par la vers
 | Entrées SGX non modifiées | Recompressées | Données compressées d'origine recopiées sans recompression |
 | En-têtes ZIP | Système « DOS » conservé | Système de la plateforme de compilation ; commentaires, champs supplémentaires et date conservés sur les entrées réécrites, commentaire d'archive conservé |
 | JSON des modèles modifiés | Séparateurs `, ` et `: ` | Format compact, nombres recopiés à l'identique (contenu identique) |
+| Inventaire, colonne F | « Flux avec occurrences multiples », décompte par titre de modèle | « Répétitions dans un même modèle », par chemin interne ; `occurrences_par_flux` retiré de `synthese.json` (évolution V1) |
 
 ## Contrat V1 (lot M3)
 
