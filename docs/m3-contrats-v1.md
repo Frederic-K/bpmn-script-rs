@@ -87,6 +87,57 @@ Ajoutée après M6, à la suite de la revue Codex du commit `abe5311`.
 
 Tests : `regles::decisions_contradictoires_signalees` (les deux ordres, OUI répété, autre proposition), `cli::decisions_contradictoires_bloquent_la_production`, `traitement::decisions_contradictoires_bloquent_la_production`.
 
+## Évolution — colonne F de l'inventaire
+
+Décision du propriétaire, après analyse de l'export SAPHIR. L'application harmonise les noms de swimlanes ; elle ne recherche pas les modèles Signavio homonymes.
+
+**Avant :** la colonne F « Flux avec occurrences multiples » listait `titre (n)` pour chaque titre de modèle où la swimlane apparaissait plus d'une fois. Le décompte se faisait par titre (`occurrences_par_flux`) : deux cas différents étaient confondus.
+
+| Cas | Exemple | Ancienne colonne F |
+|---|---|---|
+| Deux swimlanes de même nom dans un modèle | « A » deux fois dans le modèle `a/model_1_.json` de titre « Flux » | `Flux (2)` |
+| Une swimlane dans deux modèles distincts de même titre | « A » une fois dans `a/…` et une fois dans `b/…`, tous deux de titre « Flux » | `Flux (2)` |
+
+Sur SAPHIR, 43 mentions en F : 6 du premier cas, 37 du second.
+
+**Maintenant :** la colonne F s'appelle « Répétitions dans un même modèle ».
+
+- Une entrée par modèle (chemin interne) où le nom apparaît au moins deux fois : `Titre du modèle (n occurrences) — chemin/interne/model_1_.json`.
+- Une entrée par ligne dans la cellule (retour à la ligne actif, comme avant).
+- Ordre de première apparition du modèle ; cellule vide si aucun modèle n'est concerné.
+- Des modèles homonymes sans répétition n'apparaissent plus. Deux homonymes qui répètent chacun le nom donnent deux entrées, distinguées par leur chemin.
+- Information seulement : aucun contrôle, aucune décision et aucun message CLI n'en dépendent.
+- Calcul : `regles::repetitions_dans_un_modele`, à partir de `occurrences_par_modele`.
+
+Sur SAPHIR : 4 lignes renseignées, 6 entrées.
+
+**Calcul supprimé :** `occurrences_par_flux` ne servait qu'à l'ancienne colonne F. Le champ est retiré de `Synthese`, de `synthetiser` et donc des nouveaux `synthese.json`. Usages vérifiés : `src/excel.rs` (seul consommateur), un test unitaire et un test CLI (attentes mises à jour). Aucun code, ni l'interface, ne relit `synthese.json`.
+
+**Conservé :** colonnes A à E ; « Nombre de flux » (D) compte toujours les titres distincts, pas les modèles (R05) ; `occurrences`, `flux` et `occurrences_par_modele` dans `synthese.json`.
+
+**Compatibilité :**
+
+- L'import des correspondances ne lit et ne contrôle que les colonnes A et B : les classeurs à l'ancienne colonne F restent acceptés.
+- Un traitement créé avant cette évolution garde son inventaire, son `synthese.json` et son classeur d'édition tels quels : rien n'est migré ni régénéré. La reprise recalcule l'inventaire depuis la copie de la source et ne relit pas `synthese.json`.
+- La spécification figée (`docs/dossier-claude/product-spec.md`, « Formats d'échange ») mentionne encore l'ancien libellé de F et le JSON historique : elle n'est pas modifiée ; cette section fait foi pour la V1.
+
+**Qualification :** `tests/qualification/verifier_v1.py` relit les sorties de chaque scénario (`qualification-runs/`) et n'accepte que deux écarts avec Python :
+
+- `synthese.json` : identique au Python après retrait de `occurrences_par_flux`, ordre des clés compris ;
+- `inventaire_swimlanes.xlsx` : mêmes lignes, six colonnes, A à E identiques, ancien en-tête F côté Python, nouvel en-tête côté Rust, et colonne F égale à la valeur recalculée depuis le `synthese.json` Python.
+
+Tout autre écart reste une régression, et les exceptions V1 précédentes sont inchangées. Le script vérifie aussi que l'évolution est présente (scénario `inventory`) et, si une copie de SAPHIR a été fournie au pilote, que seules ces deux sorties diffèrent à chaque étape. Contrôles de ce script : 5 altérations volontaires des sorties détectées (colonne F, colonne C, en-tête F, `synthese.json`, écart sur un autre fichier) ; le binaire antérieur est refusé.
+
+Tests : `regles::repetitions_*` (six cas), `cli::inventaire_seul_sans_correspondance`, `cli::repetitions_de_modeles_homonymes_distinguees_par_chemin`, `cli::ancien_classeur_a_six_colonnes_accepte`, `traitement::traitement_cree_avant_l_evolution_de_la_colonne_f_reste_utilisable`.
+
+### Note pour le refactor Python
+
+Même correction à reporter, comme **évolution fonctionnelle distincte** : ne pas la mêler à un refactor à comportement inchangé, dont la comparaison au tag `v0.1-sgx-import-tested` doit rester stricte.
+
+- Remplacer F par « Répétitions dans un même modèle », même format et même ordre qu'ici (depuis `occurrences_par_modele`).
+- Supprimer `occurrences_par_flux` de la synthèse et de `synthese.json`.
+- Dans le test de référence, n'autoriser que ces deux écarts, contrôlés exactement comme dans `verifier_v1.py`.
+
 ## Défaut hérité corrigé
 
 La vérification du SGX produit a révélé un défaut du portage d'origine. `forme["childShapes"].as_array_mut()` utilise l'indexation mutable de `serde_json`, qui **ajoute `"childShapes": null` à chaque forme qui n'en a pas**, dans tous les modèles réécrits. Aucun test ne le voyait, car toutes les formes des fixtures avaient un `childShapes`. Le parcours utilise désormais `get_mut`, et un test couvre ce cas (`renommage_n_ajoute_aucune_cle`).

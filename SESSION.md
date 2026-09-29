@@ -1,4 +1,4 @@
-# Session de développement — état au 26 septembre 2026
+# Session de développement — état au 29 septembre 2026
 
 Développement réalisé par Claude (Claude Code, session cloud Linux), à partir du dossier [docs/dossier-claude/](docs/dossier-claude/). Consignes permanentes : [AGENTS.md](AGENTS.md).
 
@@ -42,6 +42,7 @@ La procédure et le tableau à remplir sont dans [docs/m6-qualification.md](docs
 | Décisions contradictoires | OUI et NON sur la même proposition bloquent la production (évolution V1, `docs/m3-contrats-v1.md`) | Revue du parcours ; propriétaire : « pas de faille liée à une mauvaise manipulation » |
 | Parcours des décisions | Un seul classeur de décision ; deux voies sur l'écran Décisions (valider soi-même, faire valider) ; le classeur d'analyse n'est plus proposé à l'ouverture | Revue du parcours |
 | Installateur | NSIS, installation par utilisateur (sans droits admin), WebView2 téléchargé seulement s'il manque | M6 |
+| Colonne F de l'inventaire | « Répétitions dans un même modèle », par chemin interne, à la place de « Flux avec occurrences multiples » ; `occurrences_par_flux` supprimé ; aucune colonne G ; information non bloquante (évolution V1, `docs/m3-contrats-v1.md`) | Propriétaire : l'application harmonise les noms, elle ne recherche pas les modèles homonymes |
 
 ## Défauts trouvés et corrigés
 
@@ -97,6 +98,33 @@ Ensuite, à la demande du propriétaire : bouton « Enregistrer une copie » aus
 Non retenu, comme recommandé : blocage des doublons de correspondances à cibles différentes (point 7, décision métier à prendre, attentes V1 à faire évoluer).
 
 Documenté pour l'opérateur et le propriétaire : [docs/guide.md](docs/guide.md) (fichiers du traitement, garanties, correspondance code / Python) ; essais Excel réels à faire sous Windows : `docs/m6-qualification.md`, étape 6.
+
+### Évolution de la colonne F de l'inventaire (branche `claude/colonne-f-repetitions`)
+
+Détail, avant / après et note pour le refactor Python : [docs/m3-contrats-v1.md](docs/m3-contrats-v1.md), section « Évolution — colonne F de l'inventaire ». Lecture de l'inventaire pour l'opérateur : [docs/guide.md](docs/guide.md).
+
+| Élément | Changement |
+|---|---|
+| `src/regles.rs` | `occurrences_par_flux` retiré de `Synthese` et de `synthetiser` ; `repetitions_dans_un_modele` ajouté ; 6 tests unitaires |
+| `src/excel.rs` | `ecrire_inventaire` : nouvel en-tête F, une entrée par ligne |
+| `tests/cli.rs` | Attentes de l'inventaire et de `synthese.json` mises à jour ; modèles homonymes répétés ; ancien classeur à six colonnes accepté |
+| `tests/traitement.rs` | Traitement créé avant l'évolution (ancien `synthese.json`, ancienne colonne F) repris jusqu'au SGX, sans réécriture de ces fichiers |
+| `tests/qualification/verifier_v1.py` | Seuls deux écarts acceptés, contrôlés exactement ; entrée `saphir` contrôlée si présente |
+
+Preuves (Linux, conteneur cloud) :
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --workspace --locked` | 103 tests réussis : 36 unitaires du moteur, 2 de chemins, 36 CLI, 28 de traitement, 1 de l'adaptateur |
+| `cargo clippy --workspace --all-targets --locked -- -D warnings`, `cargo fmt --all --check` | Propres |
+| `npm ci`, `npm run build` | Réussis, sans avertissement |
+| Qualification (pilote + `verifier_v1.py`), binaire Linux | 30 scénarios conformes ; seuls écarts nouveaux : inventaire (F) et `synthese.json`, vérifiés exactement |
+| `verifier_v1.py` face à des altérations | 5 altérations détectées (colonne F, colonne C, en-tête F, `synthese.json`, autre fichier) ; binaire de `main` refusé (« évolution absente ») |
+| Copie de SAPHIR (non versionnée) | 12 noms, 13 propositions, SGX produit ; seules les deux sorties attendues diffèrent de Python, aux trois étapes ; colonne F : 4 lignes, 6 entrées |
+
+Limites :
+- Rust 1.95.0 utilisé : la version 1.89.0 fixée par `rust-toolchain.toml` n'était pas téléchargeable depuis le conteneur. L'intégration continue Windows la reprendra.
+- Non exécutés : tests Windows (intégration continue), installateur `npm run tauri build`, test de bout en bout `tests/interface/parcours.py`, ouverture réelle dans Excel, import Signavio.
 
 ## Preuves
 

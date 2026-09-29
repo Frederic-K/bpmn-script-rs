@@ -20,7 +20,6 @@ pub(crate) struct Occurrence {
 pub(crate) struct Synthese {
     pub(crate) occurrences: u64,
     pub(crate) flux: Vec<String>,
-    pub(crate) occurrences_par_flux: IndexMap<String, u64>,
     pub(crate) occurrences_par_modele: IndexMap<String, ParModele>,
 }
 
@@ -172,10 +171,6 @@ pub(crate) fn synthetiser(occurrences: &[Occurrence]) -> IndexMap<String, Synthe
         if !synthese_lane.flux.contains(&occurrence.flux) {
             synthese_lane.flux.push(occurrence.flux.clone());
         }
-        *synthese_lane
-            .occurrences_par_flux
-            .entry(occurrence.flux.clone())
-            .or_default() += 1;
         synthese_lane
             .occurrences_par_modele
             .entry(occurrence.fichier_modele.clone())
@@ -186,6 +181,24 @@ pub(crate) fn synthetiser(occurrences: &[Occurrence]) -> IndexMap<String, Synthe
             .occurrences += 1;
     }
     synthese
+}
+
+// Colonne F de l'inventaire : modèles où ce nom de lane apparaît au moins deux
+// fois, identifiés par leur chemin interne (deux modèles peuvent porter le même
+// titre), dans l'ordre de première apparition. Simple information : aucun
+// contrôle n'en dépend.
+pub(crate) fn repetitions_dans_un_modele(synthese_lane: &Synthese) -> Vec<String> {
+    synthese_lane
+        .occurrences_par_modele
+        .iter()
+        .filter(|(_, par_modele)| par_modele.occurrences > 1)
+        .map(|(chemin, par_modele)| {
+            format!(
+                "{} ({} occurrences) — {chemin}",
+                par_modele.flux, par_modele.occurrences
+            )
+        })
+        .collect()
 }
 
 // Contrat d'import des correspondances (P02). Une ligne sans nouveau nom (vide
@@ -892,8 +905,93 @@ mod tests {
         ];
         let synthese = synthetiser(&occurrences);
         assert_eq!(synthese["A"].flux, ["Flux"]);
-        assert_eq!(synthese["A"].occurrences_par_flux["Flux"], 2);
         assert_eq!(synthese["A"].occurrences_par_modele.len(), 2);
+    }
+
+    // --- Colonne F de l'inventaire : répétitions dans un même modèle
+
+    fn repetitions(occurrences: &[Occurrence], lane: &str) -> Vec<String> {
+        repetitions_dans_un_modele(&synthetiser(occurrences)[lane])
+    }
+
+    #[test]
+    fn repetitions_une_occurrence_dans_un_modele() {
+        let occurrences = [occurrence("a/model_1_.json", "Flux", "A")];
+        assert!(repetitions(&occurrences, "A").is_empty());
+    }
+
+    #[test]
+    fn repetitions_deux_occurrences_dans_un_modele() {
+        let occurrences = [
+            occurrence("a/model_1_.json", "Flux", "A"),
+            occurrence("a/model_1_.json", "Flux", "A"),
+        ];
+        assert_eq!(
+            repetitions(&occurrences, "A"),
+            ["Flux (2 occurrences) — a/model_1_.json"]
+        );
+    }
+
+    #[test]
+    fn repetitions_modeles_homonymes_sans_repetition() {
+        // Même titre, une occurrence dans chaque modèle : aucune répétition.
+        let occurrences = [
+            occurrence("a/model_1_.json", "Flux", "A"),
+            occurrence("b/model_1_.json", "Flux", "A"),
+        ];
+        assert!(repetitions(&occurrences, "A").is_empty());
+    }
+
+    #[test]
+    fn repetitions_seul_le_modele_homonyme_concerne() {
+        let occurrences = [
+            occurrence("a/model_1_.json", "Flux", "A"),
+            occurrence("b/model_1_.json", "Flux", "A"),
+            occurrence("b/model_1_.json", "Flux", "A"),
+            occurrence("b/model_1_.json", "Flux", "A"),
+        ];
+        assert_eq!(
+            repetitions(&occurrences, "A"),
+            ["Flux (3 occurrences) — b/model_1_.json"]
+        );
+    }
+
+    #[test]
+    fn repetitions_modeles_homonymes_distingues_par_chemin() {
+        let occurrences = [
+            occurrence("a/model_1_.json", "Flux", "A"),
+            occurrence("b/model_1_.json", "Flux", "A"),
+            occurrence("a/model_1_.json", "Flux", "A"),
+            occurrence("b/model_1_.json", "Flux", "A"),
+        ];
+        assert_eq!(
+            repetitions(&occurrences, "A"),
+            [
+                "Flux (2 occurrences) — a/model_1_.json",
+                "Flux (2 occurrences) — b/model_1_.json"
+            ]
+        );
+    }
+
+    #[test]
+    fn repetitions_dans_l_ordre_de_premiere_apparition() {
+        // Le modèle z apparaît avant a : l'ordre n'est pas alphabétique. La lane
+        // B, jamais répétée, n'a aucune entrée.
+        let occurrences = [
+            occurrence("z/model_1_.json", "Flux Z", "A"),
+            occurrence("a/model_1_.json", "Flux A", "A"),
+            occurrence("m/model_1_.json", "Flux M", "B"),
+            occurrence("a/model_1_.json", "Flux A", "A"),
+            occurrence("z/model_1_.json", "Flux Z", "A"),
+        ];
+        assert_eq!(
+            repetitions(&occurrences, "A"),
+            [
+                "Flux Z (2 occurrences) — z/model_1_.json",
+                "Flux A (2 occurrences) — a/model_1_.json"
+            ]
+        );
+        assert!(repetitions(&occurrences, "B").is_empty());
     }
 
     // --- Correspondances (R04, P02)

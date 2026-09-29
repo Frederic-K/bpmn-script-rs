@@ -404,38 +404,131 @@ fn inventaire_seul_sans_correspondance() {
             .all(|occurrence| occurrence["flux"] == FLUX)
     );
 
+    // Pas de compteur par titre de flux (évolution V1 de la colonne F).
     let synthese = espace.json("output/synthese.json");
     assert_eq!(
         synthese["A"],
-        json!({"occurrences": 3, "flux": [FLUX], "occurrences_par_flux": {FLUX: 3},
+        json!({"occurrences": 3, "flux": [FLUX],
                "occurrences_par_modele": {
                    MODELE_A: {"flux": FLUX, "occurrences": 2},
                    MODELE_B: {"flux": FLUX, "occurrences": 1}}})
     );
     assert_eq!(synthese.as_object().unwrap().len(), 2);
 
+    let lignes = lignes_inventaire(&espace);
+    assert_eq!(lignes[0], ENTETES_INVENTAIRE);
+    // « Nombre de flux » compte les noms distincts, pas les modèles (R05).
+    // Colonne F : seul le modèle A répète « A » ; le modèle B, homonyme, n'y figure pas.
+    assert_eq!(
+        lignes[1],
+        [
+            "A",
+            "",
+            "3",
+            "1",
+            FLUX,
+            &format!("{FLUX} (2 occurrences) — {MODELE_A}")
+        ]
+    );
+    assert_eq!(lignes[2], ["B", "", "1", "1", FLUX, ""]);
+    assert!(!espace.existe("output/analyse_modifications.json"));
+}
+
+const ENTETES_INVENTAIRE: [&str; 6] = [
+    "Nom actuel",
+    "Nouveau nom",
+    "Occurrences",
+    "Nombre de flux",
+    "Flux concernés",
+    "Répétitions dans un même modèle",
+];
+
+// Lignes de l'inventaire écrit, en texte ; toutes ont exactement six colonnes.
+fn lignes_inventaire(espace: &Espace) -> Vec<Vec<String>> {
     let mut classeur: Xlsx<_> =
         open_workbook(espace.chemin("output/inventaire_swimlanes.xlsx")).unwrap();
     let plage = classeur.worksheet_range("Correspondance").unwrap();
-    let lignes: Vec<Vec<String>> = plage
+    assert_eq!(plage.width(), 6);
+    plage
         .rows()
         .map(|ligne| ligne.iter().map(Data::to_string).collect())
-        .collect();
+        .collect()
+}
+
+#[test]
+fn repetitions_de_modeles_homonymes_distinguees_par_chemin() {
+    // Deux modèles de même titre répètent chacun « A » : deux entrées, une par
+    // ligne, identifiées par leur chemin. « B » n'apparaît qu'une fois par modèle.
+    let modele = json!({"childShapes": [lane(json!("A"), vec![lane(json!("A"), vec![])]), lane(json!("B"), vec![])]});
+    let mut entrees = entrees_standard();
+    entrees[0].1 = modele.to_string().into_bytes();
+    entrees[2].1 = modele.to_string().into_bytes();
+    let espace = Espace::avec_entrees("repetitions-homonymes", &entrees);
+    assert_eq!(espace.lancer().status.code(), Some(0));
+
+    let lignes = lignes_inventaire(&espace);
+    assert_eq!(lignes[0], ENTETES_INVENTAIRE);
     assert_eq!(
-        lignes[0],
+        lignes[1],
         [
-            "Nom actuel",
-            "Nouveau nom",
-            "Occurrences",
-            "Nombre de flux",
-            "Flux concernés",
-            "Flux avec occurrences multiples"
+            "A",
+            "",
+            "4",
+            "1",
+            FLUX,
+            &format!("{FLUX} (2 occurrences) — {MODELE_A}\n{FLUX} (2 occurrences) — {MODELE_B}")
         ]
     );
-    // « Nombre de flux » compte les noms distincts, pas les modèles (R05).
-    assert_eq!(lignes[1], ["A", "", "3", "1", FLUX, &format!("{FLUX} (3)")]);
-    assert_eq!(lignes[2], ["B", "", "1", "1", FLUX, ""]);
-    assert!(!espace.existe("output/analyse_modifications.json"));
+    assert_eq!(lignes[2], ["B", "", "2", "1", FLUX, ""]);
+}
+
+#[test]
+fn ancien_classeur_a_six_colonnes_accepte() {
+    // Classeur produit avant l'évolution de la colonne F : seules A et B sont lues.
+    let espace = Espace::standard("ancien-classeur");
+    ecrire_xlsx(
+        &espace.chemin("work/correspondance_swimlanes.xlsx"),
+        "Correspondance",
+        &[
+            vec![
+                Texte("Nom actuel"),
+                Texte("Nouveau nom"),
+                Texte("Occurrences"),
+                Texte("Nombre de flux"),
+                Texte("Flux concernés"),
+                Texte("Flux avec occurrences multiples"),
+            ],
+            vec![
+                Texte("A"),
+                Texte("Z"),
+                Nombre(3.0),
+                Nombre(1.0),
+                Texte(FLUX),
+                Texte("Même flux éà (3)"),
+            ],
+            vec![
+                Texte("B"),
+                Vide,
+                Nombre(1.0),
+                Nombre(1.0),
+                Texte(FLUX),
+                Vide,
+            ],
+        ],
+    );
+    assert_eq!(espace.lancer().status.code(), Some(0));
+    assert_eq!(
+        espace.json("output/correspondances.json"),
+        json!({"A": "Z"})
+    );
+    assert_eq!(
+        espace
+            .json("output/analyse_modifications.json")
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
 }
 
 fn verifier_anomalie(espace: &Espace, detail: &str) {
