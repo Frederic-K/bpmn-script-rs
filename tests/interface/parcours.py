@@ -274,7 +274,7 @@ try:
             feuille.cell(ligne, 4).value = 1
     classeur.save(edition_decisions)
     cliquer("Lire le classeur de décision")
-    attendre_texte("Contrôle terminé, aucune anomalie bloquante : les décisions correspondent à l'analyse et le renommage testé en mémoire donne le nombre d'occurrences attendu.")
+    attendre_texte("Contrôle terminé, aucune anomalie bloquante : les décisions admises correspondent à l'analyse et le renommage testé en mémoire donne le nombre d'occurrences attendu.")
     attendre_texte("depuis le classeur de décision du traitement")
     attendre_texte("La génération appliquera 1 décision(s) admise(s), soit 2 occurrence(s).")
     verifier("OUI ignoré" not in fenetre.find_element(By.TAG_NAME, "main").text, "aucun OUI ignoré : pas de message")
