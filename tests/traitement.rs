@@ -808,15 +808,35 @@ fn etat_complet_pour_l_interface_apres_reprise() {
     let bilan = etat.dernier_bilan.unwrap();
     assert_eq!(bilan.statut, Statut::ProductionPossible);
     assert_eq!(bilan.noms_inconnus, ["X"]);
-    assert_eq!((bilan.lignes_admises, bilan.lignes_en_attente), (1, 1));
-    assert_eq!(bilan.lignes_a_examiner.len(), 1);
-    let ligne = &bilan.lignes_a_examiner[0];
-    assert_eq!((ligne.ligne, ligne.resultat.as_str()), (3, "EN ATTENTE"));
     assert_eq!(
-        ligne.motif,
-        "Validation « PEUT-ÊTRE » non reconnue : OUI ou NON attendu"
+        (
+            bilan.lignes_admises,
+            bilan.lignes_refusees,
+            bilan.lignes_ignorees,
+            bilan.lignes_en_attente,
+            bilan.propositions_sans_decision,
+            bilan.occurrences_admises,
+        ),
+        (1, 0, 0, 1, 0, 2)
     );
-    assert_eq!(ligne.fichier_modele, MODELE_B);
+
+    // Manifeste écrit par une version antérieure, avec l'ancien détail des
+    // lignes non admises (`lignes_a_examiner`) : toujours lisible.
+    let chemin = dossier.join("traitement.json");
+    let mut manifeste: Value = serde_json::from_str(&fs::read_to_string(&chemin).unwrap()).unwrap();
+    manifeste["dernier_bilan"]["lignes_a_examiner"] = json!([{
+        "ligne": 3, "nom_actuel": "A", "nouveau_nom": "Z", "fichier_modele": MODELE_B,
+        "resultat": "EN ATTENTE", "motif": "Validation « PEUT-ÊTRE » non reconnue : OUI ou NON attendu"
+    }]);
+    fs::write(&chemin, serde_json::to_string(&manifeste).unwrap()).unwrap();
+    let bilan = Traitement::ouvrir(&dossier)
+        .unwrap()
+        .etat()
+        .unwrap()
+        .dernier_bilan
+        .unwrap();
+    assert_eq!(bilan.statut, Statut::ProductionPossible);
+    assert_eq!((bilan.lignes_admises, bilan.lignes_en_attente), (1, 1));
 }
 
 // ---------------------------------------------------------------- Revue du parcours

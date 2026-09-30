@@ -43,6 +43,7 @@ La procédure et le tableau à remplir sont dans [docs/m6-qualification.md](docs
 | Parcours des décisions | Un seul classeur de décision ; deux voies sur l'écran Décisions (valider soi-même, faire valider) ; le classeur d'analyse n'est plus proposé à l'ouverture | Revue du parcours |
 | Installateur | NSIS, installation par utilisateur (sans droits admin), WebView2 téléchargé seulement s'il manque | M6 |
 | Colonne F de l'inventaire | « Répétitions dans un même modèle », par chemin interne, à la place de « Flux avec occurrences multiples » ; `occurrences_par_flux` supprimé ; aucune colonne G ; information non bloquante (évolution V1, `docs/m3-contrats-v1.md`) | Propriétaire : l'application harmonise les noms, elle ne recherche pas les modèles homonymes |
+| Écran Décisions | Tableau des lignes non admises retiré : compteurs seuls, message « n OUI ignoré(s) … Détail dans le rapport de contrôle », libellé du contrôle conforme détaillé ; `Bilan.lignes_a_examiner` et `LigneExaminee` supprimés (un manifeste qui les contient reste lisible). Écart assumé avec `ui-spec.md` (« une décision invalide montre son motif ») : le motif est dans le rapport de contrôle | Propriétaire, retour d'un traitement réel : tableau non filtrable, masquant les lignes VALIDÉE, redondant avec le rapport Excel |
 
 ## Défauts trouvés et corrigés
 
