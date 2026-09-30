@@ -15,7 +15,7 @@ use std::fmt;
 pub use fichiers::copier_sans_ecraser;
 pub use regles::Modification;
 pub use traitement::{Etape, Etat, EtatFichier, EtatTentative, Lecture, Traitement};
-pub use workflow::{Bilan, Chemins, Statut, executer};
+pub use workflow::{Bilan, Chemins, LigneExaminee, Statut, executer};
 
 // Erreur bloquante : code stable (pour l'interface), message lisible et
 // détails éventuels (une ligne par cellule ou par modèle en anomalie).

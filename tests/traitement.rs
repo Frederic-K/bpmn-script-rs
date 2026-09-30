@@ -808,17 +808,15 @@ fn etat_complet_pour_l_interface_apres_reprise() {
     let bilan = etat.dernier_bilan.unwrap();
     assert_eq!(bilan.statut, Statut::ProductionPossible);
     assert_eq!(bilan.noms_inconnus, ["X"]);
+    assert_eq!((bilan.lignes_admises, bilan.lignes_en_attente), (1, 1));
+    assert_eq!(bilan.lignes_a_examiner.len(), 1);
+    let ligne = &bilan.lignes_a_examiner[0];
+    assert_eq!((ligne.ligne, ligne.resultat.as_str()), (3, "EN ATTENTE"));
     assert_eq!(
-        (
-            bilan.lignes_admises,
-            bilan.lignes_refusees,
-            bilan.lignes_ignorees,
-            bilan.lignes_en_attente,
-            bilan.propositions_sans_decision,
-            bilan.occurrences_admises,
-        ),
-        (1, 0, 0, 1, 0, 2)
+        ligne.motif,
+        "Validation « PEUT-ÊTRE » non reconnue : OUI ou NON attendu"
     );
+    assert_eq!(ligne.fichier_modele, MODELE_B);
 }
 
 // ---------------------------------------------------------------- Revue du parcours

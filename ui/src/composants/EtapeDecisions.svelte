@@ -6,6 +6,7 @@
   import Fichier from "./Fichier.svelte";
   import Message from "./Message.svelte";
   import Pastille from "./Pastille.svelte";
+  import Tableau from "./Tableau.svelte";
 
   // Deux voies, un seul classeur utilisé : le classeur de décision du
   // traitement. Un retour importé le remplace entièrement (pas de fusion).
@@ -22,6 +23,9 @@
       !aActualiser &&
       (bilan?.statut === "ProductionPossible" || bilan?.statut === "SgxProduit"),
   );
+
+  // Résultat d'une ligne (rapport du moteur) -> couleur de sa pastille.
+  const COULEURS_DES_RESULTATS = { "IGNORÉE": "alerte", "CONTRADICTOIRE": "erreur" };
 
   let lectureRefusee = $state(false);
   let copie = $state(null);
@@ -113,8 +117,29 @@
       <div><Pastille>{texte.sansDecision}</Pastille><b>{bilan.propositions_sans_decision}</b><small>{texte.sansDecisionDetail}</small></div>
     </div>
 
-    {#if bilan.lignes_ignorees > 0}
-      <Message type="alerte" etiquette={texte.etiquetteIgnores} titre={texte.ouiIgnores(bilan.lignes_ignorees)} />
+    {#if bilan.lignes_a_examiner.length > 0}
+      <Tableau legende={texte.legende}>
+        <thead>
+          <tr>
+            <th scope="col" class="text-right">{texte.colonneLigne}</th>
+            <th scope="col">{texte.colonneNomActuel}</th>
+            <th scope="col">{texte.colonneNouveauNom}</th>
+            <th scope="col">{texte.colonneResultat}</th>
+            <th scope="col">{texte.colonneMotif}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each bilan.lignes_a_examiner as ligne}
+            <tr>
+              <td class="text-right tabular-nums">{ligne.ligne}</td>
+              <td class="whitespace-pre-wrap">{ligne.nom_actuel}</td>
+              <td class="font-semibold whitespace-pre-wrap">{ligne.nouveau_nom}</td>
+              <td><Pastille couleur={COULEURS_DES_RESULTATS[ligne.resultat] ?? "neutre"}>{ligne.resultat}</Pastille></td>
+              <td>{ligne.motif}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </Tableau>
     {/if}
 
     {#if bilan.contradictions?.length > 0}
