@@ -122,9 +122,19 @@ Preuves (Linux, conteneur cloud) :
 | `verifier_v1.py` face à des altérations | 5 altérations détectées (colonne F, colonne C, en-tête F, `synthese.json`, autre fichier) ; binaire de `main` refusé (« évolution absente ») |
 | Copie de SAPHIR (non versionnée) | 12 noms, 13 propositions, SGX produit ; seules les deux sorties attendues diffèrent de Python, aux trois étapes ; colonne F : 4 lignes, 6 entrées |
 
+Preuves (Windows, intégration continue sur `47422f3`, fusion de la branche dans `main`) : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36629309187
+
+| Contrôle | Résultat |
+|---|---|
+| Rust | 1.89.0 (`1.89.0-x86_64-pc-windows-msvc`), installé depuis `rust-toolchain.toml` |
+| `cargo test --workspace --locked` | 103 tests réussis : 36 unitaires du moteur, 2 de chemins, 36 CLI, 28 de traitement, 1 de l'adaptateur |
+| `npm ci`, `npm run tauri build` | Application et installateur NSIS construits |
+| Qualification (pilote + `verifier_v1.py`), binaire Windows | « Attentes V1 respectées : 30 scénarios » ; écarts limités à l'inventaire et à `synthese.json` (entrée `saphir` absente, non contrôlée) |
+| Lancement de l'application (WebView2) | Application lancée, toujours active après 15 s |
+
 Limites :
-- Rust 1.95.0 utilisé : la version 1.89.0 fixée par `rust-toolchain.toml` n'était pas téléchargeable depuis le conteneur. L'intégration continue Windows la reprendra.
-- Non exécutés : tests Windows (intégration continue), installateur `npm run tauri build`, test de bout en bout `tests/interface/parcours.py`, ouverture réelle dans Excel, import Signavio.
+- Sous Linux, Rust 1.95.0 utilisé : la version 1.89.0 fixée par `rust-toolchain.toml` n'était pas téléchargeable depuis le conteneur. Elle a été vérifiée par l'intégration continue Windows (ci-dessus). Clippy et rustfmt n'ont été exécutés qu'avec 1.95.0.
+- Non exécutés : test de bout en bout `tests/interface/parcours.py`, ouverture réelle dans Excel, import Signavio.
 
 ## Preuves
 
