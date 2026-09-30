@@ -200,7 +200,8 @@ export const textes = {
     etiquetteAucunSgx: "Aucun SGX",
     aucuneAdmissible: "Aucune décision admissible : aucun SGX ne peut être généré.",
     etiquetteControle: "Contrôlé",
-    controle: "Décisions contrôlées contre l'analyse ; le recomptage en mémoire est conforme.",
+    controle:
+      "Contrôle terminé, aucune anomalie bloquante : les décisions correspondent à l'analyse et le renommage testé en mémoire donne le nombre d'occurrences attendu.",
     seraApplique: (lignes, occurrences) =>
       `La génération appliquera ${lignes} décision(s) admise(s), soit ${occurrences} occurrence(s). Aucune autre ligne n'est appliquée.`,
     generer: "Générer le SGX modifié",
