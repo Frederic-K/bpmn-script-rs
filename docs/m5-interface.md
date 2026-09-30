@@ -32,7 +32,7 @@ Environ 1 150 lignes au total (Svelte, JavaScript et adaptateur Rust).
 Ajouts au moteur (sans changement de règle) :
 - `Etat.propositions` : l'aperçu de l'analyse ;
 - `Etat.dernier_bilan` : enregistré dans le manifeste, pour l'affichage après une reprise ;
-- `Bilan.lignes_a_examiner` : les lignes non admises et leur motif.
+- `Bilan.lignes_a_examiner` : les lignes non admises et leur motif. Retiré depuis, avec le tableau de l'écran Décisions : l'écran n'affiche que les compteurs, le détail est dans le rapport de contrôle (voir [SESSION.md](../SESSION.md)).
 
 ## Robustesse et sécurité
 
@@ -79,7 +79,7 @@ Le test de bout en bout pilote par WebDriver (tauri-driver et WebKitWebDriver) l
 - une cellule invalide signalée et rien d'adopté ;
 - les noms inconnus signalés ;
 - l'aperçu de l'analyse ;
-- le motif d'une ligne en attente ;
+- le motif d'une ligne en attente (aujourd'hui vérifié dans le rapport de contrôle, l'écran n'ayant plus de tableau) et le message d'un OUI ignoré ;
 - **un double clic sur « Générer » qui ne produit qu'une tentative** ;
 - le contenu exact du SGX produit ;
 - un classeur modifié après lecture, qui suspend la génération ;

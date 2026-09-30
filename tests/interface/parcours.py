@@ -244,23 +244,44 @@ try:
     attendre_texte("ont reçu à la fois OUI et NON")
     verifier("décisions contraires pour « Serv. achats »" in fenetre.find_element(By.TAG_NAME, "main").text, "contradiction : lignes citées")
     verifier(not bouton("Générer le SGX modifié").is_enabled(), "contradiction : génération impossible")
-    resultats = [cellule.text for cellule in fenetre.find_elements(By.CSS_SELECTOR, "tbody td:nth-child(4)")]
-    verifier(resultats.count("CONTRADICTOIRE") == 2, f"contradiction : deux lignes marquées dans le tableau ({resultats})")
+    # Écran Décisions sans tableau des lignes : le détail est dans le rapport de contrôle.
+    verifier(not fenetre.find_elements(By.CSS_SELECTOR, "main table"), "décisions : aucun tableau des lignes")
     capture("decisions-contradictoires")
 
-    # Décisions : un OUI, une valeur non reconnue.
+    # OUI ignoré (occurrences modifiées) : message qui renvoie au rapport,
+    # l'autre OUI reste admis.
     classeur = load_workbook(edition_decisions)
     feuille = classeur["Analyse"]
     feuille.delete_rows(feuille.max_row)
     for ligne in range(2, feuille.max_row + 1):
-        modele = feuille.cell(ligne, 6).value
-        feuille.cell(ligne, 5).value = "OUI" if modele == MODELE_A else "à voir"
+        feuille.cell(ligne, 5).value = "OUI"
+        if feuille.cell(ligne, 6).value == MODELE_B:
+            feuille.cell(ligne, 4).value = 5
     classeur.save(edition_decisions)
     cliquer("Lire le classeur de décision")
-    attendre_texte("le recomptage en mémoire est conforme")
+    attendre_texte("1 OUI ignoré(s) : ils ne correspondent pas à l'analyse et ne seront pas appliqués. Détail dans le rapport de contrôle.")
+    attendre_texte("aucune anomalie bloquante")
+    verifier(bouton("Générer le SGX modifié").is_enabled(), "OUI ignoré : génération possible pour l'autre OUI")
+    capture("decisions-oui-ignore")
+
+    # Décisions : un OUI, une valeur non reconnue.
+    classeur = load_workbook(edition_decisions)
+    feuille = classeur["Analyse"]
+    for ligne in range(2, feuille.max_row + 1):
+        modele = feuille.cell(ligne, 6).value
+        feuille.cell(ligne, 5).value = "OUI" if modele == MODELE_A else "à voir"
+        if modele == MODELE_B:
+            feuille.cell(ligne, 4).value = 1
+    classeur.save(edition_decisions)
+    cliquer("Lire le classeur de décision")
+    attendre_texte("Contrôle terminé, aucune anomalie bloquante : les décisions admises correspondent à l'analyse et le renommage testé en mémoire donne le nombre d'occurrences attendu.")
     attendre_texte("depuis le classeur de décision du traitement")
     attendre_texte("La génération appliquera 1 décision(s) admise(s), soit 2 occurrence(s).")
-    verifier("Validation « À VOIR » non reconnue" in fenetre.find_element(By.TAG_NAME, "main").text, "motif de la ligne en attente affiché")
+    verifier("OUI ignoré" not in fenetre.find_element(By.TAG_NAME, "main").text, "aucun OUI ignoré : pas de message")
+    # Le motif de la ligne en attente n'est plus à l'écran : il est dans le rapport de contrôle.
+    rapport = sorted((dossier / "controle").glob("r*/controle_validation.xlsx"))[-1]
+    motifs = [cellule.value for feuille in load_workbook(rapport) for rangee in feuille.iter_rows() for cellule in rangee]
+    verifier("Validation « À VOIR » non reconnue : OUI ou NON attendu" in motifs, f"motif de la ligne en attente dans le rapport ({rapport.parent.name})")
     capture("decisions-controlees")
 
     # Import d'un retour au mauvais format : refusé, les décisions lues restent.
@@ -277,7 +298,7 @@ try:
     attendre_texte("2 nom(s) avec une demande de renommage ont été lus.")
     aller_a_l_etape("decisions")
     attendre_titre("Décisions")
-    attendre_texte("le recomptage en mémoire est conforme")
+    attendre_texte("aucune anomalie bloquante")
     verifier(bouton("Générer le SGX modifié").is_enabled(), "relecture identique : génération toujours possible")
     admises = fenetre.find_element(By.CSS_SELECTOR, "[data-bilan='admises']").text
     verifier(admises == "1", f"relecture identique : 1 décision admise conservée ({admises!r})")

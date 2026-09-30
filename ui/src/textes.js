@@ -186,12 +186,9 @@ export const textes = {
     enAttenteDetail: "sans OUI ni NON",
     sansDecision: "Sans décision",
     sansDecisionDetail: "propositions absentes du classeur",
-    legende: "Lignes non admises : elles ne seront pas appliquées.",
-    colonneLigne: "Ligne",
-    colonneNomActuel: "Nom actuel",
-    colonneNouveauNom: "Nouveau nom",
-    colonneResultat: "Résultat",
-    colonneMotif: "Motif",
+    etiquetteIgnores: "OUI ignorés",
+    ouiIgnores: (nombre) =>
+      `${nombre} OUI ignoré(s) : ils ne correspondent pas à l'analyse et ne seront pas appliqués. Détail dans le rapport de contrôle.`,
     etiquetteBloquant: "Bloquant",
     contradictions:
       "Des propositions ont reçu à la fois OUI et NON. Aucun nouveau SGX ne peut être créé : gardez une seule réponse par proposition, puis relisez le classeur.",
@@ -200,7 +197,8 @@ export const textes = {
     etiquetteAucunSgx: "Aucun SGX",
     aucuneAdmissible: "Aucune décision admissible : aucun SGX ne peut être généré.",
     etiquetteControle: "Contrôlé",
-    controle: "Décisions contrôlées contre l'analyse ; le recomptage en mémoire est conforme.",
+    controle:
+      "Contrôle terminé, aucune anomalie bloquante : les décisions admises correspondent à l'analyse et le renommage testé en mémoire donne le nombre d'occurrences attendu.",
     seraApplique: (lignes, occurrences) =>
       `La génération appliquera ${lignes} décision(s) admise(s), soit ${occurrences} occurrence(s). Aucune autre ligne n'est appliquée.`,
     generer: "Générer le SGX modifié",
