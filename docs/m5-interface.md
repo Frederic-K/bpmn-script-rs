@@ -51,7 +51,7 @@ Ajouts au moteur (sans changement de règle) :
 - `aria-current="step"` sur l'étape affichée ; les actions en cours sont annoncées par une région `role="status"`.
 - Les statuts sont toujours écrits en toutes lettres (pastilles et étiquettes), jamais portés par la seule couleur.
 - En-têtes de tableau `scope="col"` et légendes de tableau (tant que l'interface avait des tableaux).
-- Mise en page sur une colonne en petite fenêtre (moins de 980 px).
+- Étapes en barre horizontale sous l'en-tête (à l'origine, colonne de gauche) ; contenu et bilan sur une colonne en petite fenêtre (moins de 980 px).
 - Le compilateur Svelte n'émet aucun avertissement d'accessibilité.
 
 ## Choix techniques

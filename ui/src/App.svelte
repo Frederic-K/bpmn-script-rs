@@ -87,7 +87,7 @@
 
 <svelte:window onfocus={actualiser} />
 
-<div class="grid h-full grid-rows-[auto_1fr]">
+<div class="flex h-full flex-col">
   <header class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-trait bg-surface px-4 py-2.5">
     <span class="font-semibold">{textes.application.nom}</span>
     {#if etat}
@@ -103,14 +103,14 @@
     <Bouton aria-pressed={theme === "dark"} onclick={basculerTheme}>{textes.application.themeSombre}</Bouton>
   </header>
 
-  <div
-    class="grid min-h-0 max-[980px]:grid-cols-1 max-[980px]:overflow-y-auto
-      {etat ? 'grid-cols-[212px_minmax(0,1fr)_268px]' : 'grid-cols-1'}"
-  >
-    {#if etat}
-      <Etapes {etat} {ecran} {naviguer} />
-    {/if}
+  {#if etat}
+    <Etapes {etat} {ecran} {naviguer} />
+  {/if}
 
+  <div
+    class="grid min-h-0 flex-1 max-[980px]:grid-cols-1 max-[980px]:overflow-y-auto
+      {etat ? 'grid-cols-[minmax(0,1fr)_268px]' : 'grid-cols-1'}"
+  >
     <main
       class="grid min-w-0 content-start gap-4.5 overflow-y-auto px-6.5 pt-5.5 pb-8
         max-[980px]:overflow-visible max-[980px]:px-4 max-[980px]:pt-4.5"
