@@ -129,16 +129,11 @@ export const textes = {
     etiquetteAActualiser: "À actualiser",
     aActualiser:
       "Dernière analyse — à actualiser : le classeur de correspondance a changé. Relisez les correspondances, puis préparez l'analyse avant de reprendre la validation.",
-    apercu: "Aperçu en lecture seule des changements proposés. Rien n'est encore modifié.",
+    apercu:
+      "Changements proposés, rien n'est encore modifié. Le détail ligne par ligne (flux, noms, occurrences, fichier modèle) est dans le classeur de décision, à l'étape suivante, où Excel permet de le filtrer et de le trier.",
     propositions: "propositions",
     occurrences: "occurrences visées",
     modeles: "modèles concernés",
-    legende: "Une ligne par modèle et par nom ; des flux homonymes restent distincts par leur fichier modèle.",
-    colonneFlux: "Flux",
-    colonneNomActuel: "Nom actuel",
-    colonneNouveauNom: "Nouveau nom",
-    colonneOccurrences: "Occ.",
-    colonneFichier: "Fichier modèle",
     suivant: "Passer aux décisions",
   },
 

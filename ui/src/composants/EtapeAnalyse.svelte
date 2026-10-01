@@ -3,11 +3,10 @@
   import Bouton from "./Bouton.svelte";
   import Chiffre from "./Chiffre.svelte";
   import Message from "./Message.svelte";
-  import Tableau from "./Tableau.svelte";
 
-  // Aperçu en lecture seule. Le classeur d'analyse n'est pas proposé à
-  // l'ouverture : sa colonne Validation serait confondue avec le classeur de
-  // décision. Sa copie sans réponse s'enregistre depuis l'étape Décisions.
+  // Aperçu en compteurs ; le détail ligne par ligne est dans le classeur de décision.
+  // Le classeur d'analyse n'est pas proposé à l'ouverture : sa colonne Validation
+  // serait confondue avec le classeur de décision.
   let { etat, naviguer, occupe } = $props();
   const texte = textes.analyse;
 
@@ -38,35 +37,13 @@
   {:else}
     <p class="max-w-[72ch] text-encre-2">{texte.apercu}</p>
 
-    <div class="grid gap-4.5 {aActualiser ? 'opacity-60' : ''}" data-analyse={aActualiser ? "a-actualiser" : "actuelle"}>
-      <div class="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
-        <Chiffre valeur={propositions.length} libelle={texte.propositions} />
-        <Chiffre valeur={occurrencesVisees} libelle={texte.occurrences} />
-        <Chiffre valeur={modelesConcernes} libelle={texte.modeles} />
-      </div>
-
-      <Tableau legende={texte.legende}>
-        <thead>
-          <tr>
-            <th scope="col">{texte.colonneFlux}</th>
-            <th scope="col">{texte.colonneNomActuel}</th>
-            <th scope="col">{texte.colonneNouveauNom}</th>
-            <th scope="col" class="text-right">{texte.colonneOccurrences}</th>
-            <th scope="col">{texte.colonneFichier}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each propositions as proposition}
-            <tr>
-              <td>{proposition.flux}</td>
-              <td class="whitespace-pre-wrap">{proposition.nom_actuel}</td>
-              <td class="font-semibold whitespace-pre-wrap">{proposition.nouveau_nom}</td>
-              <td class="text-right tabular-nums">{proposition.occurrences}</td>
-              <td class="min-w-[220px] font-mono text-xs text-encre-2 wrap-anywhere">{proposition.fichier_modele}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </Tableau>
+    <div
+      class="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5 {aActualiser ? 'opacity-60' : ''}"
+      data-analyse={aActualiser ? "a-actualiser" : "actuelle"}
+    >
+      <Chiffre valeur={propositions.length} libelle={texte.propositions} />
+      <Chiffre valeur={occurrencesVisees} libelle={texte.occurrences} />
+      <Chiffre valeur={modelesConcernes} libelle={texte.modeles} />
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
