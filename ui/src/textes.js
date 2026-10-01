@@ -89,7 +89,7 @@ export const textes = {
     consigne: "Renseignez les nouveaux noms dans Excel. Une cellule Nouveau nom vide laisse le nom inchangé.",
     ouvrir: "Ouvrir le classeur",
     etiquetteARelire: "À relire",
-    aRelire: "Ce classeur a changé depuis sa dernière lecture. Relisez-le pour actualiser le traitement.",
+    aRelire: "Vos modifications du classeur ne sont pas encore prises en compte : relisez-le pour actualiser le traitement.",
     etiquetteInfo: "Info",
     fermerAvantLecture: "Enregistrez puis fermez le classeur avant de le lire.",
     etiquetteLu: "Lu",
@@ -148,9 +148,9 @@ export const textes = {
       "Chaque proposition attend OUI ou NON dans la colonne Validation. Seules les lignes OUI conformes seront appliquées ; une ligne sans réponse n'autorise rien.",
     etiquetteARelire: "À relire",
     aRelire:
-      "Le classeur de décision a changé depuis sa dernière lecture. Relisez-le pour actualiser le traitement ; la génération est suspendue d'ici là.",
+      "Vos modifications du classeur de décision ne sont pas encore prises en compte : lisez le classeur pour les contrôler. La génération attend cette lecture.",
     correspondancesARelire:
-      "Le classeur de correspondance a changé depuis sa dernière lecture. Relisez les correspondances et préparez l'analyse avant de valider.",
+      "Les modifications du classeur de correspondance ne sont pas encore prises en compte : relisez les correspondances et préparez l'analyse avant de valider.",
     localTitre: "Je valide moi-même",
     localConsigne:
       "Ouvrez le classeur de décision et renseignez uniquement la colonne Validation (OUI ou NON). Enregistrez et fermez Excel, puis lisez le classeur.",

@@ -330,7 +330,7 @@ try:
     classeur.save(edition_decisions)
     fenetre.execute_script("window.dispatchEvent(new Event('focus'))")
     aller_a_l_etape("decisions")
-    attendre_texte("Le classeur de décision a changé depuis sa dernière lecture")
+    attendre_texte("Vos modifications du classeur de décision ne sont pas encore prises en compte")
     etape = fenetre.find_element(By.XPATH, "//nav//button[@aria-current='step']").text
     verifier("à relire" in etape, f"l'étape signale le classeur à relire ({etape!r})")
     verifier(not bouton("Générer le SGX modifié").is_enabled(), "génération suspendue tant que le classeur n'est pas relu")
