@@ -43,15 +43,12 @@ export const textes = {
     enCours: "en cours",
   },
 
-  // Statuts du moteur (Statut dans src/workflow.rs).
+  // Statut d'une tentative de génération (Statut dans src/workflow.rs) : seuls
+  // ces trois statuts sont enregistrés pour une tentative.
   statuts: {
     SgxProduit: "SGX produit",
     AucuneDecisionAdmissible: "Aucune décision admissible",
     ControleBloquant: "Contrôle bloquant",
-    ProductionPossible: "Génération possible",
-    DecisionsAttendues: "Décisions attendues",
-    AnalyseSansImpact: "Aucun changement",
-    InventaireTermine: "Inventaire",
   },
 
   accueil: {

@@ -3,6 +3,7 @@
   import { dateHeure, COULEURS_DES_STATUTS } from "../format.js";
   import { textes } from "../textes.js";
   import Bouton from "./Bouton.svelte";
+  import Carte from "./Carte.svelte";
   import Chiffre from "./Chiffre.svelte";
   import Fichier from "./Fichier.svelte";
   import Message from "./Message.svelte";
@@ -37,8 +38,6 @@
     return `${tentative.dossier}/controle_validation.xlsx`;
   }
 </script>
-
-<h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">{texte.titre}</h1>
 
 {#each etat.tentatives_interrompues as dossier}
   <Message type="alerte" etiquette={texte.etiquetteInterrompue} titre={texte.interrompue} details={[dossier]} />
@@ -91,9 +90,7 @@
 {/if}
 
 {#if precedentes.length > 0}
-  <section class="grid content-start gap-3 rounded-lg border border-trait p-4.5" aria-labelledby="titre-precedents">
-    <h2 id="titre-precedents" class="text-base font-semibold">{texte.precedents}</h2>
-    <p class="text-xs text-encre-2">{texte.precedentsExplication}</p>
+  <Carte titre={texte.precedents} explication={texte.precedentsExplication}>
     {#each precedentes as tentative}
       <div class="grid gap-1 border-t border-trait pt-2.5 text-[13px]">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -105,5 +102,5 @@
         {/if}
       </div>
     {/each}
-  </section>
+  </Carte>
 {/if}

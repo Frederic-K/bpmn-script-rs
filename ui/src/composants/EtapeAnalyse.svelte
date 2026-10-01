@@ -17,8 +17,6 @@
   const modelesConcernes = $derived(new Set(propositions.map((proposition) => proposition.fichier_modele)).size);
 </script>
 
-<h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">{texte.titre}</h1>
-
 {#if !etat.analyse_preparee}
   <Message type="info" etiquette={texte.etiquetteNonPreparee} titre={texte.nonPreparee}>
     <Bouton onclick={() => naviguer("correspondances")}>{texte.retourCorrespondances}</Bouton>

@@ -8,7 +8,6 @@
   const texte = textes.source;
 </script>
 
-<h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">{texte.titre}</h1>
 <Fichier type="SGX" chemin={etat.source_chemin_original} />
 <p class="text-xs text-encre-2">{texte.copie}</p>
 

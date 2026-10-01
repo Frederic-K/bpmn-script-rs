@@ -17,7 +17,7 @@ Svelte 5 en **JavaScript uniquement** : aucun fichier `.ts`, aucun `lang="ts"`, 
 | `ui/src/composants/Accueil.svelte` | Nouveau traitement et reprise |
 | `Etapes`, `BilanTraitement`, `Message`, `Fichier` | Navigation, panneau de bilan, message de statut, fichier avec ses actions |
 | `ui/src/style.css` | Tailwind CSS v4 : couleurs de la maquette validée (`@theme`) et leurs valeurs sombres (`data-theme="dark"`). Migration depuis un CSS classique demandée après M6 |
-| `Bouton`, `Pastille`, `Chiffre` | Éléments répétés, en composants plutôt qu'en classes `@apply` (`Tableau` retiré avec les tableaux des écrans Analyse et Décisions) |
+| `Bouton`, `Pastille`, `Chiffre`, `Carte` | Éléments répétés, en composants plutôt qu'en classes `@apply` (`Tableau` retiré avec les tableaux des écrans Analyse et Décisions ; `Carte` ajouté depuis : bloc encadré avec titre et explication) |
 | `src-tauri/src/lib.rs` | Commandes Tauri : une par opération du moteur, dialogues, ouverture de fichiers |
 
 Environ 1 150 lignes au total (Svelte, JavaScript et adaptateur Rust).

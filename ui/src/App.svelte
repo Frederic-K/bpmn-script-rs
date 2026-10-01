@@ -20,7 +20,8 @@
   let occupe = $state("");
   let erreur = $state(null);
   let theme = $state(document.documentElement.dataset.theme);
-  let contenu;
+  // Titre de l'écran, focalisé à chaque navigation. Les groupes de textes portent les noms des écrans.
+  let titre;
 
   const ECRAN_DE_L_ETAPE = {
     InventairePret: "source",
@@ -53,7 +54,7 @@
     ecran = nouvelEcran;
     erreur = null;
     await tick();
-    contenu?.querySelector("h1")?.focus();
+    titre?.focus();
   }
 
   function naviguerSelonEtape() {
@@ -114,8 +115,10 @@
     <main
       class="grid min-w-0 content-start gap-4.5 overflow-y-auto px-6.5 pt-5.5 pb-8
         max-[980px]:overflow-visible max-[980px]:px-4 max-[980px]:pt-4.5"
-      bind:this={contenu}
     >
+      <h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1" bind:this={titre}>
+        {etat ? textes[ecran].titre : textes.accueil.titre}
+      </h1>
       {#if erreur}
         <Message type="erreur" etiquette={textes.application.etiquetteErreur} titre={erreur.message} details={erreur.details} />
       {/if}
