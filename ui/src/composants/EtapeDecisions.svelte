@@ -16,6 +16,8 @@
   const lues = $derived(etat.decisions_lues);
   // Un classeur modifié sans être relu : les compteurs sont ceux du dernier contrôle, pas du contenu actuel.
   const aActualiser = $derived(etat.decisions_a_relire || etat.correspondances_a_relire);
+  // Action principale : ouvrir le classeur tant qu'il n'a été ni modifié ni lu, puis le lire une fois modifié.
+  const aOuvrir = $derived(!etat.decisions_adoptees && !etat.decisions_a_relire);
   // Le moteur refait tous ces contrôles à la génération ; le bouton ne fait que les refléter.
   const generationPossible = $derived(
     etat.decisions_adoptees &&
@@ -61,13 +63,13 @@
     <h2 id="titre-local" class="text-base font-semibold">{texte.localTitre}</h2>
     <p class="text-[13px] text-encre-2">{texte.localConsigne}</p>
     {#if etat.edition_decisions}
-      <Fichier type="XLSX" chemin={etat.edition_decisions}>
-        <Bouton disabled={occupe} onclick={() => executer(textes.actions.ouvertureClasseur, () => moteur.ouvrirFichier(etat.edition_decisions))}>
+      <Fichier type="XLSX" chemin={etat.edition_decisions} enAvant={aOuvrir}>
+        <Bouton principal={aOuvrir} disabled={occupe} onclick={() => executer(textes.actions.ouvertureClasseur, () => moteur.ouvrirFichier(etat.edition_decisions))}>
           {texte.ouvrir}
         </Bouton>
       </Fichier>
     {/if}
-    <div><Bouton principal={!etat.decisions_adoptees || etat.decisions_a_relire} disabled={occupe} onclick={() => lire()}>{texte.lire}</Bouton></div>
+    <div><Bouton principal={etat.decisions_a_relire} disabled={occupe} onclick={() => lire()}>{texte.lire}</Bouton></div>
   </section>
 
   <section class="grid content-start gap-3 rounded-lg border border-trait p-4.5" aria-labelledby="titre-externe">

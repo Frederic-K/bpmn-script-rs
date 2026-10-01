@@ -12,6 +12,8 @@
   const bilan = $derived(etat.dernier_bilan);
   const lues = $derived(etat.correspondances_lues);
   const aLire = $derived(!etat.correspondances_adoptees || etat.correspondances_a_relire);
+  // Action principale : ouvrir le classeur tant qu'il n'a été ni modifié ni lu, puis le lire une fois modifié.
+  const aOuvrir = $derived(!etat.correspondances_adoptees && !etat.correspondances_a_relire);
 
   let lectureRefusee = $state(false);
   let copie = $state(null);
@@ -42,8 +44,8 @@
 <h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">{texte.titre}</h1>
 <p class="max-w-[72ch] text-encre-2">{texte.consigne}</p>
 
-<Fichier type="XLSX" chemin={etat.edition_correspondances}>
-  <Bouton disabled={occupe} onclick={() => executer(textes.actions.ouvertureClasseur, () => moteur.ouvrirFichier(etat.edition_correspondances))}>
+<Fichier type="XLSX" chemin={etat.edition_correspondances} enAvant={aOuvrir}>
+  <Bouton principal={aOuvrir} disabled={occupe} onclick={() => executer(textes.actions.ouvertureClasseur, () => moteur.ouvrirFichier(etat.edition_correspondances))}>
     {texte.ouvrir}
   </Bouton>
   <Bouton disabled={occupe} onclick={enregistrerCopie}>{texte.copier}</Bouton>
@@ -91,7 +93,7 @@
 {/if}
 
 <div class="flex flex-wrap items-center gap-2">
-  <Bouton principal={aLire} disabled={occupe} onclick={() => lire()}>
+  <Bouton principal={etat.correspondances_a_relire} disabled={occupe} onclick={() => lire()}>
     {etat.correspondances_adoptees ? texte.relire : texte.lire}
   </Bouton>
   <Bouton disabled={occupe} onclick={importer}>{texte.importer}</Bouton>
