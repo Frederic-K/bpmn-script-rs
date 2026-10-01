@@ -63,7 +63,7 @@
     <h2 id="titre-local" class="text-base font-semibold">{texte.localTitre}</h2>
     <p class="text-[13px] text-encre-2">{texte.localConsigne}</p>
     {#if etat.edition_decisions}
-      <Fichier type="XLSX" chemin={etat.edition_decisions} enAvant={aOuvrir}>
+      <Fichier type="XLSX" chemin={etat.edition_decisions}>
         <Bouton principal={aOuvrir} disabled={occupe} onclick={() => executer(textes.actions.ouvertureClasseur, () => moteur.ouvrirFichier(etat.edition_decisions))}>
           {texte.ouvrir}
         </Bouton>

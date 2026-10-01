@@ -44,7 +44,7 @@
 <h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">{texte.titre}</h1>
 <p class="max-w-[72ch] text-encre-2">{texte.consigne}</p>
 
-<Fichier type="XLSX" chemin={etat.edition_correspondances} enAvant={aOuvrir}>
+<Fichier type="XLSX" chemin={etat.edition_correspondances}>
   <Bouton principal={aOuvrir} disabled={occupe} onclick={() => executer(textes.actions.ouvertureClasseur, () => moteur.ouvrirFichier(etat.edition_correspondances))}>
     {texte.ouvrir}
   </Bouton>
