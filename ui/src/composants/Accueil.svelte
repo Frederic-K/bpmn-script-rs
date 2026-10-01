@@ -2,6 +2,7 @@
   import * as moteur from "../moteur.js";
   import { textes } from "../textes.js";
   import Bouton from "./Bouton.svelte";
+  import Carte from "./Carte.svelte";
   import Fichier from "./Fichier.svelte";
 
   let { executer, naviguerSelonEtape, occupe } = $props();
@@ -33,13 +34,10 @@
   }
 </script>
 
-<h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">{texte.titre}</h1>
 <p class="max-w-[72ch] text-encre-2">{texte.introduction}</p>
 
 <div class="grid max-w-215 grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
-  <section class="grid content-start gap-3 rounded-lg border border-trait p-4.5" aria-labelledby="titre-nouveau">
-    <h2 id="titre-nouveau" class="text-base font-semibold">{texte.nouveauTitre}</h2>
-    <p class="text-xs text-encre-2">{texte.nouveauExplication}</p>
+  <Carte titre={texte.nouveauTitre} explication={texte.nouveauExplication}>
     {#if source}
       <Fichier type="SGX" chemin={source}>
         <Bouton disabled={occupe} onclick={choisirSource}>{texte.changer}</Bouton>
@@ -57,11 +55,9 @@
     <div>
       <Bouton principal disabled={occupe || !source || !dossierParent} onclick={creer}>{texte.inventorier}</Bouton>
     </div>
-  </section>
+  </Carte>
 
-  <section class="grid content-start gap-3 rounded-lg border border-trait p-4.5" aria-labelledby="titre-reprendre">
-    <h2 id="titre-reprendre" class="text-base font-semibold">{texte.reprendreTitre}</h2>
-    <p class="text-xs text-encre-2">{texte.reprendreExplication}</p>
+  <Carte titre={texte.reprendreTitre} explication={texte.reprendreExplication}>
     <div><Bouton disabled={occupe} onclick={reprendre}>{texte.ouvrirTraitement}</Bouton></div>
-  </section>
+  </Carte>
 </div>

@@ -3,6 +3,7 @@
   import { dateHeure, nomFichier } from "../format.js";
   import { textes } from "../textes.js";
   import Bouton from "./Bouton.svelte";
+  import Carte from "./Carte.svelte";
   import Fichier from "./Fichier.svelte";
   import Message from "./Message.svelte";
   import Pastille from "./Pastille.svelte";
@@ -16,6 +17,8 @@
   const lues = $derived(etat.decisions_lues);
   // Un classeur modifié sans être relu : les compteurs sont ceux du dernier contrôle, pas du contenu actuel.
   const aActualiser = $derived(etat.decisions_a_relire || etat.correspondances_a_relire);
+  // Action principale : ouvrir le classeur tant qu'il n'a été ni modifié ni lu, puis le lire une fois modifié.
+  const aOuvrir = $derived(!etat.decisions_adoptees && !etat.decisions_a_relire);
   // Le moteur refait tous ces contrôles à la génération ; le bouton ne fait que les refléter.
   const generationPossible = $derived(
     etat.decisions_adoptees &&
@@ -47,7 +50,6 @@
   }
 </script>
 
-<h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1">{texte.titre}</h1>
 <p class="max-w-[72ch] text-encre-2">{texte.consigne}</p>
 
 {#if etat.correspondances_a_relire}
@@ -57,22 +59,18 @@
 {/if}
 
 <div class="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
-  <section class="grid content-start gap-3 rounded-lg border border-trait p-4.5" aria-labelledby="titre-local">
-    <h2 id="titre-local" class="text-base font-semibold">{texte.localTitre}</h2>
-    <p class="text-[13px] text-encre-2">{texte.localConsigne}</p>
+  <Carte titre={texte.localTitre} explication={texte.localConsigne}>
     {#if etat.edition_decisions}
       <Fichier type="XLSX" chemin={etat.edition_decisions}>
-        <Bouton disabled={occupe} onclick={() => executer(textes.actions.ouvertureClasseur, () => moteur.ouvrirFichier(etat.edition_decisions))}>
+        <Bouton principal={aOuvrir} disabled={occupe} onclick={() => executer(textes.actions.ouvertureClasseur, () => moteur.ouvrirFichier(etat.edition_decisions))}>
           {texte.ouvrir}
         </Bouton>
       </Fichier>
     {/if}
-    <div><Bouton principal={!etat.decisions_adoptees || etat.decisions_a_relire} disabled={occupe} onclick={() => lire()}>{texte.lire}</Bouton></div>
-  </section>
+    <div><Bouton principal={etat.decisions_a_relire} disabled={occupe} onclick={() => lire()}>{texte.lire}</Bouton></div>
+  </Carte>
 
-  <section class="grid content-start gap-3 rounded-lg border border-trait p-4.5" aria-labelledby="titre-externe">
-    <h2 id="titre-externe" class="text-base font-semibold">{texte.externeTitre}</h2>
-    <p class="text-[13px] text-encre-2">{texte.externeConsigne}</p>
+  <Carte titre={texte.externeTitre} explication={texte.externeConsigne}>
     <div><Bouton disabled={occupe || !etat.fichier_analyse} onclick={enregistrerCopie}>{texte.copier}</Bouton></div>
     <p class="text-xs text-encre-2">{texte.copieSansEcrasement}</p>
     {#if copie}
@@ -80,7 +78,7 @@
     {/if}
     <p class="text-[13px] text-encre-2">{texte.importerConsigne}</p>
     <div><Bouton disabled={occupe} onclick={importer}>{texte.importer}</Bouton></div>
-  </section>
+  </Carte>
 </div>
 
 {#if lectureRefusee && lues}
@@ -117,7 +115,7 @@
       <Message type="alerte" etiquette={texte.etiquetteIgnores} titre={texte.ouiIgnores(bilan.lignes_ignorees)} />
     {/if}
 
-    {#if bilan.contradictions?.length > 0}
+    {#if bilan.contradictions.length > 0}
       <Message type="erreur" etiquette={texte.etiquetteBloquant} titre={texte.contradictions} details={bilan.contradictions} />
     {:else if bilan.statut === "ControleBloquant"}
       <Message type="erreur" etiquette={texte.etiquetteBloquant} titre={texte.bloquant} details={bilan.divergences} />

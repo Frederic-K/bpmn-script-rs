@@ -61,16 +61,11 @@
   }
 </script>
 
-<nav
-  class="grid content-start gap-0.5 overflow-y-auto border-r border-trait px-2.5 py-3.5
-    max-[980px]:auto-cols-[minmax(96px,1fr)] max-[980px]:grid-flow-col max-[980px]:overflow-x-auto
-    max-[980px]:border-r-0 max-[980px]:border-b"
-  aria-label={texte.navigation}
->
+<nav class="flex gap-0.5 overflow-x-auto border-b border-trait px-2.5 py-1.5" aria-label={texte.navigation}>
   {#each etapes as etape, index}
     <button
       type="button"
-      class="grid w-full cursor-pointer grid-cols-[24px_1fr] items-center gap-x-2 gap-y-0.5 rounded-md p-2 text-left
+      class="grid flex-1 cursor-pointer grid-cols-[24px_1fr] items-center gap-x-2 gap-y-0.5 rounded-md p-2 text-left whitespace-nowrap
         enabled:hover:bg-surface disabled:cursor-default disabled:opacity-50 aria-[current=step]:bg-accent-doux"
       disabled={!etape.accessible}
       aria-current={etape.id === ecran ? "step" : undefined}
@@ -81,7 +76,7 @@
         {etape.faite && !etape.alerte ? "✓" : index + 1}
       </span>
       <span class="font-semibold">{etape.libelle}</span>
-      <span class="col-start-2 text-xs text-encre-2 max-[980px]:hidden">{etatDeLEtape(etape)}</span>
+      <span class="col-start-2 text-xs text-encre-2">{etatDeLEtape(etape)}</span>
     </button>
   {/each}
 </nav>

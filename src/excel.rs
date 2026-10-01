@@ -198,7 +198,6 @@ pub(crate) fn ecrire_inventaire(
             ("Répétitions dans un même modèle", 90.0),
         ],
         &lignes,
-        &[4, 5],
         Some((1, false)),
     )
 }
@@ -230,7 +229,6 @@ pub(crate) fn ecrire_analyse(chemin: &Path, analyse: &[Modification]) -> Resulta
             ("Fichier modèle", 250.0),
         ],
         &lignes,
-        &[0, 5],
         Some((4, true)),
     )
 }
@@ -252,25 +250,26 @@ pub(crate) fn ecrire_controle(chemin: &Path, rapport: &[Vec<Value>]) -> Resultat
             ("Fichier modèle", 250.0),
         ],
         rapport,
-        &[1, 8, 9],
         None,
     )
 }
 
 // Écrit une feuille unique : en-tête en gras, volet figé, filtre automatique,
-// colonnes à retour à la ligne, et éventuellement une colonne de saisie
-// surlignée (avec liste OUI/NON si demandé).
+// toutes les cellules à retour à la ligne et centrées verticalement, et
+// éventuellement une colonne de saisie surlignée (avec liste OUI/NON si demandé).
 fn ecrire_excel(
     chemin: &Path,
     feuille: &str,
     colonnes: &[(&str, f64)],
     lignes: &[Vec<Value>],
-    colonnes_retour_ligne: &[u16],
     colonne_saisie: Option<(u16, bool)>,
 ) -> Resultat<()> {
-    let format_entete = Format::new().set_bold();
-    let format_retour_ligne = Format::new().set_text_wrap().set_align(FormatAlign::Top);
-    let format_saisie = Format::new()
+    let format_cellule = Format::new()
+        .set_text_wrap()
+        .set_align(FormatAlign::VerticalCenter);
+    let format_entete = format_cellule.clone().set_bold();
+    let format_saisie = format_cellule
+        .clone()
         .set_pattern(FormatPattern::Solid)
         .set_background_color(0xFFF2CC);
 
@@ -288,10 +287,8 @@ fn ecrire_excel(
             let colonne = colonne as u16;
             let format = if colonne_saisie.is_some_and(|(saisie, _)| saisie == colonne) {
                 &format_saisie
-            } else if colonnes_retour_ligne.contains(&colonne) {
-                &format_retour_ligne
             } else {
-                &Format::default()
+                &format_cellule
             };
             match valeur {
                 Value::Null => feuille_excel.write_blank(numero_ligne, colonne, format)?,
@@ -328,4 +325,58 @@ fn ecrire_excel(
 
     classeur.save(chemin)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Read;
+
+    use super::*;
+
+    fn contenu(archive: &mut zip::ZipArchive<std::fs::File>, nom: &str) -> String {
+        let mut texte = String::new();
+        archive
+            .by_name(nom)
+            .unwrap()
+            .read_to_string(&mut texte)
+            .unwrap();
+        texte
+    }
+
+    #[test]
+    fn toutes_les_cellules_a_la_ligne_et_centrees_verticalement() {
+        let chemin = std::env::temp_dir().join(format!(
+            "bpmn-excel-mise-en-forme-{}.xlsx",
+            std::process::id()
+        ));
+        let modification = Modification {
+            fichier_modele: "a/model_1_.json".to_string(),
+            flux: "Flux".to_string(),
+            nom_actuel: "A".to_string(),
+            nouveau_nom: "B".to_string(),
+            occurrences: 2,
+        };
+        ecrire_analyse(&chemin, &[modification]).unwrap();
+        let mut archive = zip::ZipArchive::new(std::fs::File::open(&chemin).unwrap()).unwrap();
+        let styles = contenu(&mut archive, "xl/styles.xml");
+        let feuille = contenu(&mut archive, "xl/worksheets/sheet1.xml");
+        std::fs::remove_file(&chemin).unwrap();
+
+        // En-tête, cellules ordinaires, colonne de saisie : trois formats, tous
+        // à retour à la ligne et centrés ; le format 0 (par défaut) n'est pas utilisé.
+        let formats = &styles[styles.find("<cellXfs").unwrap()..styles.find("</cellXfs>").unwrap()];
+        let alignes = formats
+            .matches(r#"<alignment vertical="center" wrapText="1"/>"#)
+            .count();
+        assert_eq!((formats.matches("<xf ").count(), alignes), (4, 3));
+        let cellules = feuille.matches("<c r=").count();
+        assert_eq!(cellules, 12);
+        assert_eq!(feuille.matches(r#" s="0""#).count(), 0);
+        assert_eq!(
+            cellules,
+            feuille.matches(r#" s="1""#).count()
+                + feuille.matches(r#" s="2""#).count()
+                + feuille.matches(r#" s="3""#).count()
+        );
+    }
 }

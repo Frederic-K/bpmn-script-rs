@@ -17,7 +17,7 @@ Svelte 5 en **JavaScript uniquement** : aucun fichier `.ts`, aucun `lang="ts"`, 
 | `ui/src/composants/Accueil.svelte` | Nouveau traitement et reprise |
 | `Etapes`, `BilanTraitement`, `Message`, `Fichier` | Navigation, panneau de bilan, message de statut, fichier avec ses actions |
 | `ui/src/style.css` | Tailwind CSS v4 : couleurs de la maquette validée (`@theme`) et leurs valeurs sombres (`data-theme="dark"`). Migration depuis un CSS classique demandée après M6 |
-| `Bouton`, `Pastille`, `Chiffre`, `Tableau` | Éléments répétés, en composants plutôt qu'en classes `@apply` |
+| `Bouton`, `Pastille`, `Chiffre`, `Carte` | Éléments répétés, en composants plutôt qu'en classes `@apply` (`Tableau` retiré avec les tableaux des écrans Analyse et Décisions ; `Carte` ajouté depuis : bloc encadré avec titre et explication) |
 | `src-tauri/src/lib.rs` | Commandes Tauri : une par opération du moteur, dialogues, ouverture de fichiers |
 
 Environ 1 150 lignes au total (Svelte, JavaScript et adaptateur Rust).
@@ -50,8 +50,8 @@ Ajouts au moteur (sans changement de règle) :
 - Après chaque changement d'étape, le focus est placé sur le titre de l'étape.
 - `aria-current="step"` sur l'étape affichée ; les actions en cours sont annoncées par une région `role="status"`.
 - Les statuts sont toujours écrits en toutes lettres (pastilles et étiquettes), jamais portés par la seule couleur.
-- En-têtes de tableau `scope="col"` et légendes de tableau.
-- Mise en page sur une colonne en petite fenêtre (moins de 980 px).
+- En-têtes de tableau `scope="col"` et légendes de tableau (tant que l'interface avait des tableaux).
+- Étapes en barre horizontale sous l'en-tête (à l'origine, colonne de gauche) ; contenu et bilan sur une colonne en petite fenêtre (moins de 980 px).
 - Le compilateur Svelte n'émet aucun avertissement d'accessibilité.
 
 ## Choix techniques
@@ -78,7 +78,7 @@ Le test de bout en bout pilote par WebDriver (tauri-driver et WebKitWebDriver) l
 - le focus sur le titre ;
 - une cellule invalide signalée et rien d'adopté ;
 - les noms inconnus signalés ;
-- l'aperçu de l'analyse ;
+- l'aperçu de l'analyse (aujourd'hui ses trois compteurs) ;
 - le motif d'une ligne en attente (aujourd'hui vérifié dans le rapport de contrôle, l'écran n'ayant plus de tableau) et le message d'un OUI ignoré ;
 - **un double clic sur « Générer » qui ne produit qu'une tentative** ;
 - le contenu exact du SGX produit ;

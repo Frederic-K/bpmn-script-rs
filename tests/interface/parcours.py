@@ -220,8 +220,10 @@ try:
     # Analyse
     cliquer("Préparer l'analyse")
     attendre_titre("Analyse")
-    lignes = fenetre.find_elements(By.CSS_SELECTOR, "tbody tr")
-    verifier(len(lignes) == 2, "analyse : 2 propositions (un modèle homonyme par ligne)")
+    # Compteurs seuls : propositions (un modèle homonyme par ligne), occurrences visées, modèles concernés.
+    chiffres = [element.text for element in fenetre.find_elements(By.CSS_SELECTOR, "[data-chiffre]")]
+    verifier(chiffres == ["2", "3", "2"], f"analyse : 2 propositions, 3 occurrences, 2 modèles ({chiffres})")
+    verifier(not fenetre.find_elements(By.CSS_SELECTOR, "main table"), "analyse : aucun tableau des propositions")
     # Revue du parcours : le classeur d'analyse (qui a lui aussi une colonne
     # Validation) n'est plus proposé à l'ouverture.
     verifier(not fenetre.find_elements(By.XPATH, "//button[normalize-space()=\"Ouvrir l'analyse\"]"), "analyse : pas d'ouverture du classeur d'analyse")
@@ -330,7 +332,7 @@ try:
     classeur.save(edition_decisions)
     fenetre.execute_script("window.dispatchEvent(new Event('focus'))")
     aller_a_l_etape("decisions")
-    attendre_texte("Le classeur de décision a changé depuis sa dernière lecture")
+    attendre_texte("Vos modifications du classeur de décision ne sont pas encore prises en compte")
     etape = fenetre.find_element(By.XPATH, "//nav//button[@aria-current='step']").text
     verifier("à relire" in etape, f"l'étape signale le classeur à relire ({etape!r})")
     verifier(not bouton("Générer le SGX modifié").is_enabled(), "génération suspendue tant que le classeur n'est pas relu")
@@ -351,7 +353,7 @@ try:
     aller_a_l_etape("analyse")
     attendre_titre("Analyse")
     attendre_texte("Dernière analyse — à actualiser")
-    verifier(fenetre.find_elements(By.CSS_SELECTOR, "[data-analyse='a-actualiser']"), "analyse : tableau marqué à actualiser")
+    verifier(fenetre.find_elements(By.CSS_SELECTOR, "[data-analyse='a-actualiser']"), "analyse : compteurs marqués à actualiser")
     etape = fenetre.find_element(By.XPATH, "//nav//button[@aria-current='step']").text
     verifier("à actualiser" in etape, f"étape Analyse à actualiser ({etape!r})")
     propositions = fenetre.find_element(By.CSS_SELECTOR, "[data-bilan='propositions']").text

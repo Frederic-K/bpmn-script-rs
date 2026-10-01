@@ -43,15 +43,12 @@ export const textes = {
     enCours: "en cours",
   },
 
-  // Statuts du moteur (Statut dans src/workflow.rs).
+  // Statut d'une tentative de génération (Statut dans src/workflow.rs) : seuls
+  // ces trois statuts sont enregistrés pour une tentative.
   statuts: {
     SgxProduit: "SGX produit",
     AucuneDecisionAdmissible: "Aucune décision admissible",
     ControleBloquant: "Contrôle bloquant",
-    ProductionPossible: "Génération possible",
-    DecisionsAttendues: "Décisions attendues",
-    AnalyseSansImpact: "Aucun changement",
-    InventaireTermine: "Inventaire",
   },
 
   accueil: {
@@ -89,7 +86,7 @@ export const textes = {
     consigne: "Renseignez les nouveaux noms dans Excel. Une cellule Nouveau nom vide laisse le nom inchangé.",
     ouvrir: "Ouvrir le classeur",
     etiquetteARelire: "À relire",
-    aRelire: "Ce classeur a changé depuis sa dernière lecture. Relisez-le pour actualiser le traitement.",
+    aRelire: "Vos modifications du classeur ne sont pas encore prises en compte : relisez-le pour actualiser le traitement.",
     etiquetteInfo: "Info",
     fermerAvantLecture: "Enregistrez puis fermez le classeur avant de le lire.",
     etiquetteLu: "Lu",
@@ -129,16 +126,11 @@ export const textes = {
     etiquetteAActualiser: "À actualiser",
     aActualiser:
       "Dernière analyse — à actualiser : le classeur de correspondance a changé. Relisez les correspondances, puis préparez l'analyse avant de reprendre la validation.",
-    apercu: "Aperçu en lecture seule des changements proposés. Rien n'est encore modifié.",
+    apercu:
+      "Changements proposés, rien n'est encore modifié. Le détail ligne par ligne (flux, noms, occurrences, fichier modèle) est dans le classeur de décision, à l'étape suivante, où Excel permet de le filtrer et de le trier.",
     propositions: "propositions",
     occurrences: "occurrences visées",
     modeles: "modèles concernés",
-    legende: "Une ligne par modèle et par nom ; des flux homonymes restent distincts par leur fichier modèle.",
-    colonneFlux: "Flux",
-    colonneNomActuel: "Nom actuel",
-    colonneNouveauNom: "Nouveau nom",
-    colonneOccurrences: "Occ.",
-    colonneFichier: "Fichier modèle",
     suivant: "Passer aux décisions",
   },
 
@@ -148,9 +140,9 @@ export const textes = {
       "Chaque proposition attend OUI ou NON dans la colonne Validation. Seules les lignes OUI conformes seront appliquées ; une ligne sans réponse n'autorise rien.",
     etiquetteARelire: "À relire",
     aRelire:
-      "Le classeur de décision a changé depuis sa dernière lecture. Relisez-le pour actualiser le traitement ; la génération est suspendue d'ici là.",
+      "Vos modifications du classeur de décision ne sont pas encore prises en compte : lisez le classeur pour les contrôler. La génération attend cette lecture.",
     correspondancesARelire:
-      "Le classeur de correspondance a changé depuis sa dernière lecture. Relisez les correspondances et préparez l'analyse avant de valider.",
+      "Les modifications du classeur de correspondance ne sont pas encore prises en compte : relisez les correspondances et préparez l'analyse avant de valider.",
     localTitre: "Je valide moi-même",
     localConsigne:
       "Ouvrez le classeur de décision et renseignez uniquement la colonne Validation (OUI ou NON). Enregistrez et fermez Excel, puis lisez le classeur.",
