@@ -120,7 +120,7 @@
     <Etapes {etat} {ecran} {naviguer} />
   {/if}
 
-  <main class="grid min-h-0 flex-1 content-start gap-4.5 overflow-y-auto px-6.5 pt-5.5 pb-8">
+  <main class="grid min-h-0 flex-1 grid-cols-[minmax(0,64rem)] content-start gap-4.5 overflow-y-auto px-6.5 pt-5.5 pb-8">
     <h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1" bind:this={titre}>
       {etat ? textes[ecran].titre : textes.accueil.titre}
     </h1>
