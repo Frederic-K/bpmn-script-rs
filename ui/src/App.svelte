@@ -68,6 +68,8 @@
     }
   }
 
+  // Bouton icône : lune en thème clair, soleil en thème sombre ; le libellé « Thème sombre »
+  // (lecteurs d'écran, info-bulle) et aria-pressed portent l'état.
   function basculerTheme() {
     theme = theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = theme;
@@ -101,51 +103,53 @@
       </Bouton>
       <Bouton disabled={!!occupe} onclick={fermer}>{textes.application.fermer}</Bouton>
     {/if}
-    <Bouton aria-pressed={theme === "dark"} onclick={basculerTheme}>{textes.application.themeSombre}</Bouton>
+    <Bouton aria-pressed={theme === "dark"} title={textes.application.themeSombre} onclick={basculerTheme}>
+      <svg class="block size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        {#if theme === "dark"}
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        {:else}
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+        {/if}
+      </svg>
+      <span class="sr-only">{textes.application.themeSombre}</span>
+    </Bouton>
   </header>
 
   {#if etat}
     <Etapes {etat} {ecran} {naviguer} />
   {/if}
 
-  <div
-    class="grid min-h-0 flex-1 max-[980px]:grid-cols-1 max-[980px]:overflow-y-auto
-      {etat ? 'grid-cols-[minmax(0,1fr)_268px]' : 'grid-cols-1'}"
-  >
-    <main
-      class="grid min-w-0 content-start gap-4.5 overflow-y-auto px-6.5 pt-5.5 pb-8
-        max-[980px]:overflow-visible max-[980px]:px-4 max-[980px]:pt-4.5"
-    >
-      <h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1" bind:this={titre}>
-        {etat ? textes[ecran].titre : textes.accueil.titre}
-      </h1>
-      {#if erreur}
-        <Message type="erreur" etiquette={textes.application.etiquetteErreur} titre={erreur.message} details={erreur.details} />
-      {/if}
-
-      {#if !etat}
-        <Accueil {executer} {naviguerSelonEtape} occupe={!!occupe} />
-      {:else if ecran === "source"}
-        <EtapeSource {etat} {naviguer} />
-      {:else if ecran === "correspondances"}
-        <EtapeCorrespondances {etat} {executer} {naviguer} occupe={!!occupe} />
-      {:else if ecran === "analyse"}
-        <EtapeAnalyse {etat} {naviguer} occupe={!!occupe} />
-      {:else if ecran === "decisions"}
-        <EtapeDecisions {etat} {executer} {naviguer} occupe={!!occupe} />
-      {:else}
-        <EtapeResultat {etat} {executer} {naviguer} occupe={!!occupe} />
-      {/if}
-    </main>
-
-    {#if etat}
-      <BilanTraitement {etat} />
+  <main class="grid min-h-0 flex-1 grid-cols-[minmax(0,64rem)] content-start gap-4.5 overflow-y-auto px-6.5 pt-5.5 pb-8">
+    <h1 class="text-xl leading-snug font-semibold text-balance" tabindex="-1" bind:this={titre}>
+      {etat ? textes[ecran].titre : textes.accueil.titre}
+    </h1>
+    {#if erreur}
+      <Message type="erreur" etiquette={textes.application.etiquetteErreur} titre={erreur.message} details={erreur.details} />
     {/if}
-  </div>
+
+    {#if !etat}
+      <Accueil {executer} {naviguerSelonEtape} occupe={!!occupe} />
+    {:else if ecran === "source"}
+      <EtapeSource {etat} {naviguer} />
+    {:else if ecran === "correspondances"}
+      <EtapeCorrespondances {etat} {executer} {naviguer} occupe={!!occupe} />
+    {:else if ecran === "analyse"}
+      <EtapeAnalyse {etat} {naviguer} occupe={!!occupe} />
+    {:else if ecran === "decisions"}
+      <EtapeDecisions {etat} {executer} {naviguer} occupe={!!occupe} />
+    {:else}
+      <EtapeResultat {etat} {executer} {naviguer} occupe={!!occupe} />
+    {/if}
+  </main>
+
+  {#if etat}
+    <BilanTraitement {etat} />
+  {/if}
 </div>
 
 <div id="action-en-cours" role="status" aria-live="polite">
   {#if occupe}
-    <span class="fixed right-4 bottom-4 rounded-md bg-encre px-3.5 py-2 font-semibold text-fond shadow-lg">{occupe}…</span>
+    <span class="fixed right-4 bottom-14 rounded-md bg-encre px-3.5 py-2 font-semibold text-fond shadow-lg">{occupe}…</span>
   {/if}
 </div>
