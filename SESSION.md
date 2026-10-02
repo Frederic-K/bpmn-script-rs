@@ -1,10 +1,10 @@
-# Session de développement — état au 29 septembre 2026
+# Session de développement — état au 2 octobre 2026
 
-Développement réalisé par Claude (Claude Code, session cloud Linux), à partir du dossier [docs/dossier-claude/](docs/dossier-claude/). Consignes permanentes : [AGENTS.md](AGENTS.md).
+Développement réalisé par Claude (Claude Code : session cloud Linux jusqu'au lot M6 et à la colonne F, puis session locale Windows), à partir du dossier [docs/dossier-claude/](docs/dossier-claude/). Consignes permanentes : [AGENTS.md](AGENTS.md).
 
 ## Où en est le projet
 
-`main` contient les lots M0 à M6 (un commit par lot, historique linéaire), puis les corrections des revues Codex (voir ci-dessous).
+`main` contient les lots M0 à M6 (un commit par lot, historique linéaire), puis les corrections des revues Codex, l'évolution de la colonne F et la révision de l'interface d'octobre (voir ci-dessous). Dernière fusion : `9ea8b9d`.
 
 | Lot | Commit | Livré | Compte rendu |
 |---|---|---|---|
@@ -139,22 +139,55 @@ Limites :
 - Sous Linux, Rust 1.95.0 utilisé : la version 1.89.0 fixée par `rust-toolchain.toml` n'était pas téléchargeable depuis le conteneur. Elle a été vérifiée par l'intégration continue Windows (ci-dessus). Clippy et rustfmt n'ont été exécutés qu'avec 1.95.0.
 - Non exécutés : test de bout en bout `tests/interface/parcours.py`, ouverture réelle dans Excel, import Signavio.
 
+### Écran Décisions, révision de l'interface et nettoyage (30 septembre – 1er octobre, session locale Windows)
+
+Décisions correspondantes : lignes « Écran Décisions », « Révision de l'interface » et « Disposition » du tableau ci-dessus. Chaque commit contient son avant / après.
+
+| Branche (fusion) | Commits | Contenu |
+|---|---|---|
+| `claude/ecran-decisions` (`c7e0518`) | `a747aa1`, `610e619` | Tableau des lignes non admises retiré ; message des OUI ignorés ; libellé du contrôle conforme (« les décisions admises… ») ; `Bilan.lignes_a_examiner`, `LigneExaminee`, `valeur_affichee` supprimés ; test : un manifeste antérieur qui les contient reste lisible |
+| `claude/revision-ui` (`9ea8b9d`) | `75f4af0`, `eecea58` | Bouton principal = action suivante (« Ouvrir le classeur », puis « Lire… » une fois modifié), dérivé de `*_adoptees` et `*_a_relire` |
+| | `342a1b6` | Textes « À relire » reformulés comme étape suivante (alerte conservée) |
+| | `740571f` | Écran Analyse : compteurs seuls ; composant `Tableau` supprimé |
+| | `aaf3055` | `excel.rs` : un seul format (retour à la ligne, centrage vertical) pour toutes les cellules des trois classeurs ; paramètre `colonnes_retour_ligne` supprimé ; test `toutes_les_cellules_a_la_ligne_et_centrees_verticalement` |
+| | `fdedb9b` | Étapes en barre horizontale sous l'en-tête |
+| | `54d4184` | Nettoyage : titre d'écran rendu par `App.svelte` (focus direct), composant `Carte` (5 blocs), statuts de tentative inaccessibles retirés |
+
+**Incident d'historique (sans effet sur le code).** Le 30 septembre, un état intermédiaire de l'écran Décisions a été poussé directement sur `main` par erreur (`f823ae1`, `ba726ba`, `0349f4e` « Auto stash before rebase »). Il a été annulé par un revert unique (`f0b3b13`, arbre identique à `4a9956d`), sans réécriture d'historique, puis refait sur `claude/ecran-decisions`.
+
+Preuves :
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --workspace --locked` (Windows local, Rust 1.89.0) | 104 tests réussis : 37 unitaires du moteur, 2 de chemins, 36 CLI, 28 de traitement, 1 de l'adaptateur |
+| Clippy (`-D warnings`), rustfmt, `npm run build` | Propres, sans avertissement (Windows local) |
+| Intégration continue Windows | Tests, installateur, qualification (« Attentes V1 respectées : 30 scénarios ») et lancement réussis sur `610e619` (https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36744135310) et `54d4184` (https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36896014095) ; arbre de `main` identique après chaque fusion |
+| Rendu de l'interface | Vrais composants dans un navigateur, moteur simulé : écran Décisions (conforme, OUI ignorés, à relire), Correspondances, Analyse, accueil, barre d'étapes à 1200 et 700 px, focus sur le titre. Pas dans la WebView2 de l'application |
+| Essai par le propriétaire | Exécutable construit depuis la branche (`54d4184`) pour un essai avant fusion ; aucun retour d'essai consigné |
+
+Limites :
+- **`tests/interface/parcours.py` n'a pas été exécuté depuis ces changements** (Linux uniquement). Ses attentes ont été mises à jour (absence de tableau, compteurs de l'Analyse 2 / 3 / 2, OUI ignoré, motif vérifié dans le rapport Excel, nouveaux libellés) et seule leur syntaxe a été vérifiée.
+- Qualification locale non rejouée (`openpyxl` absent du poste) : seulement par l'intégration continue.
+- Mise en forme des classeurs non vérifiée dans Excel réel (hauteur des lignes). Écart de présentation avec le Python relevé par le pilote, non contrôlé par `verifier_v1.py`.
+- Trois écarts assumés avec `ui-spec.md` (motif des décisions à l'écran, aperçu ligne par ligne de l'analyse, navigation à gauche) : voir le tableau des décisions.
+
 ## Preuves
 
 | Contrôle | Résultat |
 |---|---|
-| `cargo test --workspace --locked` | 94 tests : 30 unitaires du moteur, 2 de chemins, 34 CLI, 27 de traitement, 1 de l'adaptateur. Sous Linux ; sous Windows par l'intégration continue |
+| `cargo test --workspace --locked` | 104 tests (état au 2 octobre) : 37 unitaires du moteur, 2 de chemins, 36 CLI, 28 de traitement, 1 de l'adaptateur. Sous Windows, en local et par l'intégration continue |
 | Clippy (`-D warnings`), rustfmt, `npm run build` | Propres, sans avertissement |
 | Qualification V1 (30 scénarios comparés au Python d'origine) | Conforme sous Linux (rejouée après la règle des contradictions) et avec le binaire Windows (`tests/qualification/verifier_v1.py`) |
-| Test de bout en bout de la vraie application (Linux, WebKitGTK) | 33 contrôles réussis, dont : double clic sur « Générer » (une seule tentative), classeur modifié qui suspend la génération, D02, D03, D04, D08, contradiction bloquante, import refusé, provenance des décisions, analyse à actualiser |
-| Windows (GitHub Actions) | 94 tests (dont F01, F02, F04 et la publication sans repli), installateur, qualification et lancement réussis sur `c8cb611` : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36304555242 |
+| Test de bout en bout de la vraie application (Linux, WebKitGTK) | **Dernière exécution avant les changements d'interface d'octobre ; non rejoué depuis.** 33 contrôles réussis alors, dont : double clic sur « Générer » (une seule tentative), classeur modifié qui suspend la génération, D02, D03, D04, D08, contradiction bloquante, import refusé, provenance des décisions, analyse à actualiser |
+| Windows (GitHub Actions) | Dernier passage complet sur `54d4184` (104 tests, installateur, qualification, lancement) : https://github.com/Frederic-K/bpmn-script-rs/actions/runs/36896014095 |
 | Mutations volontaires du code (M1) | 5 sur 5 détectées par les tests |
 
 **Non vérifié :**
 - le poste cible (A16) ;
 - SAPHIR, qui n'a pas été rejoué ;
 - l'import Signavio (A17) ;
-- l'ouverture réelle d'Excel ;
+- l'ouverture réelle d'Excel, et la nouvelle mise en forme des classeurs ;
+- le test de bout en bout depuis les changements d'interface d'octobre ;
 - le lecteur d'écran et l'agrandissement du texte ;
 - l'usage depuis une clé USB.
 
@@ -183,15 +216,23 @@ Limites :
    - `verifier_appartenance` : aucun fichier hors du traitement ne peut être ouvert.
    - `try_lock` : une seule opération à la fois.
 6. **`ui/src/App.svelte`** (`executer`) et **`EtapeDecisions.svelte`** (`generationPossible`) : aucune décision n'est prise côté interface.
+7. **Changements d'octobre** (`git diff 47422f3 9ea8b9d`) :
+   - `src/workflow.rs` : `Bilan` sans `lignes_a_examiner` ; un manifeste antérieur reste lisible (serde ignore le champ), mais une version antérieure de l'application ne relit pas un manifeste écrit par celle-ci.
+   - `src/excel.rs` : la mise en forme ne touche ni les valeurs, ni les en-têtes, ni la lecture ; le test inspecte le XML produit par `rust_xlsxwriter`.
+   - Interface : boutons principaux dérivés de `*_adoptees` / `*_a_relire`, titre d'écran et focus dans `App.svelte`, `Carte` avec `$props.id()`.
+
+   Question clé : **un retrait d'information à l'écran (motifs, aperçu de l'analyse) laisse-t-il l'opérateur sans moyen de comprendre un refus ?** (renvois au rapport de contrôle et au classeur de décision).
 
 Points volontairement discutables à challenger :
 - **Comparaison des JSON sans l'ordre des clés** (`verifier_modele`) : les clés ne sont jamais réordonnées (`preserve_order`), mais un réordonnancement ne serait pas détecté.
 - **Attributs non conservés** sur les entrées ZIP non modifiées (`external_attr`, champs supplémentaires) : c'est une limite de la bibliothèque `zip`, documentée, dont l'effet dépend du résultat de l'import Signavio.
 - **Anomalie bloquante :** une seule anomalie dans un modèle bloque tout le traitement. C'est plus sûr, mais contraignant si un export réel contient une anomalie tolérable.
 - **Code de sortie 2** du CLI : changement de contrat par rapport à l'ancien programme.
+- **Écarts avec `ui-spec.md`** décidés par le propriétaire (tableaux retirés, étapes en haut) : la spécification figée n'est pas modifiée, les écarts sont dans le tableau des décisions.
 
 ## Environnement de cette session (pour reproduire)
 
 - Sous Linux, Rust et Python étaient isolés dans un dossier temporaire ; `webkit2gtk-4.1`, `webkit2gtk-driver`, `xvfb` et `xdotool` ont été installés dans le conteneur.
 - Le paquet de qualification a toujours été décompressé hors du dépôt.
 - Aucune donnée réelle n'a été manipulée.
+- Depuis le 30 septembre : session locale Windows 11, Rust 1.89.0 (`rust-toolchain.toml`). Aucune donnée réelle versionnée ; les retours sur un traitement réel (document de révision de l'interface, avec captures) viennent du propriétaire, hors dépôt.
