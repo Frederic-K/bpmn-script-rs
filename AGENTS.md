@@ -40,7 +40,7 @@ BPMN-Script : application Windows locale qui harmonise les noms de swimlanes des
 
 ```sh
 npm ci                                            # dépendances interface (versions exactes)
-cargo test --workspace --locked                   # 103 tests Rust
+cargo test --workspace --locked                   # 104 tests Rust
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo fmt --all --check
 npm run build                                     # interface : doit rester sans avertissement
