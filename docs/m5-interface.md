@@ -15,7 +15,7 @@ Svelte 5 en **JavaScript uniquement** : aucun fichier `.ts`, aucun `lang="ts"`, 
 | `ui/src/format.js` | Date, nom de fichier, libellés des statuts |
 | `ui/src/composants/Etape*.svelte` | Un composant par étape : Source, Correspondances, Analyse, Décisions, Résultat |
 | `ui/src/composants/Accueil.svelte` | Nouveau traitement et reprise |
-| `Etapes`, `BilanTraitement`, `Message`, `Fichier` | Navigation, panneau de bilan, message de statut, fichier avec ses actions |
+| `Etapes`, `BilanTraitement`, `Message`, `Fichier` | Navigation, bilan (barre d'état en bas de fenêtre, à l'origine panneau de droite), message de statut, fichier avec ses actions |
 | `ui/src/style.css` | Tailwind CSS v4 : couleurs de la maquette validée (`@theme`) et leurs valeurs sombres (`data-theme="dark"`). Migration depuis un CSS classique demandée après M6 |
 | `Bouton`, `Pastille`, `Chiffre`, `Carte` | Éléments répétés, en composants plutôt qu'en classes `@apply` (`Tableau` retiré avec les tableaux des écrans Analyse et Décisions ; `Carte` ajouté depuis : bloc encadré avec titre et explication) |
 | `src-tauri/src/lib.rs` | Commandes Tauri : une par opération du moteur, dialogues, ouverture de fichiers |
@@ -51,7 +51,7 @@ Ajouts au moteur (sans changement de règle) :
 - `aria-current="step"` sur l'étape affichée ; les actions en cours sont annoncées par une région `role="status"`.
 - Les statuts sont toujours écrits en toutes lettres (pastilles et étiquettes), jamais portés par la seule couleur.
 - En-têtes de tableau `scope="col"` et légendes de tableau (tant que l'interface avait des tableaux).
-- Étapes en barre horizontale sous l'en-tête (à l'origine, colonne de gauche) ; contenu et bilan sur une colonne en petite fenêtre (moins de 980 px).
+- Étapes en barre horizontale sous l'en-tête (à l'origine, colonne de gauche) ; bilan en barre d'état fixe en bas de fenêtre (à l'origine, colonne de droite) : une seule colonne à toutes les largeurs.
 - Le compilateur Svelte n'émet aucun avertissement d'accessibilité.
 
 ## Choix techniques
